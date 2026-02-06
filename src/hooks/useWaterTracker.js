@@ -4,6 +4,13 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleHydrationReminders } from '../utils/notifications';
 
+// --- FUNÇÃO AUXILIAR BLINDADA ---
+// Retorna a data sempre no formato YYYY-MM-DD (Ex: 2026-02-06)
+// Independente se o celular está em Inglês, Português ou Chinês.
+const getTodayDate = () => {
+  return new Date().toISOString().split('T')[0];
+};
+
 export const useWaterTracker = () => {
   // Estados principais
   const [config, setConfig] = useState({ dailyGoalMl: 2500, perDrinkMl: 250 });
@@ -42,13 +49,16 @@ export const useWaterTracker = () => {
     await AsyncStorage.setItem('@config', JSON.stringify(newConfig));
   };
 
-  // Lógica de beber água
+  // --- LÓGICA DE BEBER ÁGUA (ATUALIZADA) ---
   const addDrink = async () => {
-    const today = new Date().toDateString();
+    // AQUI ESTÁ A CORREÇÃO: Usamos a função blindada
+    const today = getTodayDate(); 
+    
     const newDrink = { id: Date.now(), amount: config.perDrinkMl, timestamp: new Date() };
     
-    // Verifica virada de dia
+    // Verifica virada de dia comparando strings YYYY-MM-DD
     const isNewDay = progress.lastDrinkDate !== today;
+    
     const newStreak = isNewDay ? (progress.streak || 0) + 1 : (progress.streak || 1);
     const newTotal = isNewDay ? config.perDrinkMl : progress.consumedMl + config.perDrinkMl;
 
@@ -56,7 +66,7 @@ export const useWaterTracker = () => {
       consumedMl: newTotal,
       drinks: isNewDay ? [newDrink] : [...progress.drinks, newDrink],
       streak: newStreak,
-      lastDrinkDate: today
+      lastDrinkDate: today // Salva a data no novo formato
     };
 
     await saveProgress(newProgress);
