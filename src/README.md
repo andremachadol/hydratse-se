@@ -72,7 +72,6 @@ Escaneie o QR Code que aparecerá no terminal usando o app Expo Go.
 
 🧪 Próximos Passos (Roadmap)
 
-[ ] Implementar Gamificação (Conquistas e Medalhas).
+[ ] Implementar Gamificação (Conquistas e Medalhas)
 
-[ ] Adicionar suporte a Temas (Modo Escuro/Claro).
-
+[ ] Adicionar suporte a Temas (Modo Escuro/Claro)
