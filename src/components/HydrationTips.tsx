@@ -4,21 +4,20 @@ import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 const TIPS = [
-  "💡 Dica: Beber água ajuda na concentração.",
-  "🌊 Dica: Sentiu fome? Pode ser apenas sede!",
-  "✨ Dica: Água melhora a pele e o cabelo.",
-  "💧 Dica: Mantenha uma garrafa sempre por perto.",
-  "🍽️ Dica: Beber antes das refeições ajuda na digestão.",
-  "🤯 Dica: Dor de cabeça? Tente beber um copo d'água.",
-  "❄️ Dica: Água gelada acelera levemente o metabolismo."
+  "💡 Beber água ajuda no foco.",
+  "🌊 Sentiu fome? Pode ser sede!",
+  "✨ Água melhora a pele.",
+  "💧 Mantenha uma garrafa perto.",
+  "🍽️ Beba antes das refeições.",
+  "🤯 Dor de cabeça? Beba água.",
+  "❄️ Água gelada ativa o metabolismo."
 ];
 
 export default function HydrationTips() {
   const [tip, setTip] = useState("");
 
   useEffect(() => {
-    const randomTip = TIPS[Math.floor(Math.random() * TIPS.length)];
-    setTip(randomTip);
+    setTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
   }, []);
 
   if (!tip) return null;
@@ -32,15 +31,20 @@ export default function HydrationTips() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Fundo branco levemente translúcido
-    borderRadius: 15, // Arredondado
-    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+    borderRadius: 20, // Bem arredondado
+    paddingVertical: 10,
     paddingHorizontal: 20,
-    marginVertical: 15, // Espaçamento para não grudar nem em cima nem embaixo
-    width: '85%', // Largura confortável
-    alignSelf: 'center', // Garante que fique no centro
     
-    // Sombra suave para destacar do fundo degradê
+    // O SEGREDO DO TAMANHO AUTOMÁTICO:
+    alignSelf: 'center', // O container só ocupa o espaço do texto
+    maxWidth: '80%', // Mas não deixa passar de 80% da tela (para não colar na borda)
+    
+    // Espaçamento vertical para ele "respirar" no meio da tela
+    marginTop: 20,
+    marginBottom: 20,
+
+    // Sombra
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -49,10 +53,9 @@ const styles = StyleSheet.create({
   },
   
   text: {
-    color: COLORS.secondary, // Cor do texto principal
+    color: COLORS.secondary,
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 20,
   },
 });
