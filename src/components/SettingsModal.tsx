@@ -7,7 +7,15 @@ import {
 import { X, Calculator } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 
-export default function SettingsModal({ visible, onClose, onSave, currentConfig }) {
+import { UserConfig } from '../types';
+
+interface SettingsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (newConfig: UserConfig) => void;
+  currentConfig: UserConfig;}
+
+export default function SettingsModal({ visible, onClose, onSave, currentConfig }: SettingsModalProps) {
   const [tempGoal, setTempGoal] = useState('');
   const [tempCup, setTempCup] = useState('');
   const [tempWeight, setTempWeight] = useState('');

@@ -1,27 +1,24 @@
-// src/hooks/useWaterTracker.js
+// src/hooks/useWaterTracker.ts
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleHydrationReminders } from '../utils/notifications';
+import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types'; // Importando tipos
 
-// --- FUNÇÃO AUXILIAR BLINDADA ---
-// Retorna a data sempre no formato YYYY-MM-DD (Ex: 2026-02-06)
-// Independente se o celular está em Inglês, Português ou Chinês.
-const getTodayDate = () => {
+const getTodayDate = (): string => {
   return new Date().toISOString().split('T')[0];
 };
 
-export const useWaterTracker = () => {
-  // Estados principais
-  const [config, setConfig] = useState({ dailyGoalMl: 2500, perDrinkMl: 250 });
-  const [progress, setProgress] = useState({ 
+export const useWaterTracker = (): WaterTrackerReturn => {
+  // Agora o useState sabe o formato dos dados!
+  const [config, setConfig] = useState<UserConfig>({ dailyGoalMl: 2500, perDrinkMl: 250 });
+  const [progress, setProgress] = useState<DayProgress>({ 
     consumedMl: 0, 
     drinks: [], 
     streak: 0, 
     lastDrinkDate: '' 
   });
 
-  // Carrega dados ao abrir o app
   useEffect(() => {
     loadData();
   }, []);
@@ -38,46 +35,40 @@ export const useWaterTracker = () => {
     }
   };
 
-  const saveProgress = async (newProgress) => {
+  const saveProgress = async (newProgress: DayProgress) => {
     setProgress(newProgress);
     await AsyncStorage.setItem('@progress', JSON.stringify(newProgress));
   };
 
-  // Função para salvar configurações (vinda do modal)
-  const saveConfig = async (newConfig) => {
+  const saveConfig = async (newConfig: UserConfig) => {
     setConfig(newConfig);
     await AsyncStorage.setItem('@config', JSON.stringify(newConfig));
   };
 
-  // --- LÓGICA DE BEBER ÁGUA (ATUALIZADA) ---
   const addDrink = async () => {
-    // AQUI ESTÁ A CORREÇÃO: Usamos a função blindada
-    const today = getTodayDate(); 
+    const today = getTodayDate();
+    // Tipando o novo drink
+    const newDrink: Drink = { id: Date.now(), amount: config.perDrinkMl, timestamp: new Date() };
     
-    const newDrink = { id: Date.now(), amount: config.perDrinkMl, timestamp: new Date() };
-    
-    // Verifica virada de dia comparando strings YYYY-MM-DD
     const isNewDay = progress.lastDrinkDate !== today;
-    
     const newStreak = isNewDay ? (progress.streak || 0) + 1 : (progress.streak || 1);
     const newTotal = isNewDay ? config.perDrinkMl : progress.consumedMl + config.perDrinkMl;
 
-    const newProgress = {
+    const newProgress: DayProgress = {
       consumedMl: newTotal,
       drinks: isNewDay ? [newDrink] : [...progress.drinks, newDrink],
       streak: newStreak,
-      lastDrinkDate: today // Salva a data no novo formato
+      lastDrinkDate: today
     };
 
     await saveProgress(newProgress);
     
-    // Feedback para o usuário
     if (progress.consumedMl >= config.dailyGoalMl && !isNewDay) {
       Alert.alert("⚠️ Cuidado", "Meta já batida! Excesso de água pode fazer mal.");
     } else if (newProgress.consumedMl >= config.dailyGoalMl) {
       Alert.alert("🎉 Meta Batida!", "Parabéns! Hidratação completa.");
     } else {
-      scheduleHydrationReminders(); // Reagenda notificações
+      scheduleHydrationReminders();
     }
   };
 
@@ -85,7 +76,7 @@ export const useWaterTracker = () => {
     if (progress.drinks.length === 0) return;
     const lastDrink = progress.drinks[progress.drinks.length - 1];
     
-    const newProgress = {
+    const newProgress: DayProgress = {
       ...progress,
       consumedMl: Math.max(0, progress.consumedMl - lastDrink.amount),
       drinks: progress.drinks.slice(0, -1)
@@ -111,12 +102,5 @@ export const useWaterTracker = () => {
     );
   };
 
-  return {
-    config,
-    progress,
-    saveConfig,
-    addDrink,
-    undoLastDrink,
-    resetDay
-  };
+  return { config, progress, saveConfig, addDrink, undoLastDrink, resetDay };
 };
