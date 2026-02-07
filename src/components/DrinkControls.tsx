@@ -1,5 +1,5 @@
 // src/components/DrinkControls.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/theme';
@@ -12,18 +12,21 @@ interface DrinkControlsProps {
   hasHistory: boolean;
 }
 
-export default function DrinkControls({ onDrink, onUndo, onReset, drinkSize, hasHistory }: DrinkControlsProps) {
+function DrinkControls({ onDrink, onUndo, onReset, drinkSize, hasHistory }: DrinkControlsProps) {
   return (
     <View style={styles.container}>
       
       {/* BOTÃO PRINCIPAL (Estilo Antigo Restaurado) */}
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={onDrink}
         activeOpacity={0.8}
-        style={styles.shadowContainer} // Sombra separada para não bugar o gradiente
+        style={styles.shadowContainer}
+        accessibilityLabel={drinkSize > 0 ? `Beber ${drinkSize} mililitros de água` : 'Meta de hidratação atingida'}
+        accessibilityRole="button"
+        accessibilityHint="Toque para registrar consumo de água"
       >
         <LinearGradient
-          colors={[COLORS.primary, '#4fa3d1']} // Gradiente sutil
+          colors={[COLORS.primary, '#4fa3d1']}
           style={styles.mainButton}
         >
           <Text style={styles.mainButtonText}>
@@ -37,11 +40,21 @@ export default function DrinkControls({ onDrink, onUndo, onReset, drinkSize, has
       <View style={styles.bottomRow}>
         {hasHistory ? (
           <>
-            <TouchableOpacity style={styles.secondaryButton} onPress={onUndo}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={onUndo}
+              accessibilityLabel="Desfazer último registro"
+              accessibilityRole="button"
+            >
               <Text style={styles.secondaryButtonText}>↩ Desfazer</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.secondaryButton, styles.resetButton]} onPress={onReset}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, styles.resetButton]}
+              onPress={onReset}
+              accessibilityLabel="Zerar registros do dia"
+              accessibilityRole="button"
+            >
               <Text style={[styles.secondaryButtonText, styles.resetText]}>🗑️ Zerar</Text>
             </TouchableOpacity>
           </>
@@ -129,3 +142,5 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
   },
 });
+
+export default memo(DrinkControls);

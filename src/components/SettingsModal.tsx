@@ -1,8 +1,9 @@
 // src/components/SettingsModal.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { UserConfig } from '../types';
 import { COLORS } from '../constants/theme';
+import { MIN_WEIGHT, MAX_WEIGHT, HEALTH_WARNING_WEIGHT, ML_PER_KG } from '../constants/config';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -28,12 +29,45 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
     }
   }, [visible, currentConfig]);
 
+  // Formata peso automaticamente: digitar "7050" vira "70,50"
+  const handleWeightChange = (text: string) => {
+    // Remove tudo que não é número
+    const digits = text.replace(/\D/g, '');
+
+    // Limita a 5 dígitos (999,99 = 99999)
+    const limited = digits.slice(0, 5);
+
+    if (limited === '') {
+      setWeight('');
+      return;
+    }
+
+    // Converte para número e formata com 2 casas decimais
+    const numValue = parseInt(limited, 10) / 100;
+    const formatted = numValue.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    setWeight(formatted);
+  };
+
   const handleSave = () => {
-    // Validação básica
+    // Validação de peso
     const weightNum = parseFloat(weight.replace(',', '.'));
-    if (!weightNum || weightNum <= 0) {
+    if (!weightNum || isNaN(weightNum)) {
       Alert.alert("Erro", "Digite um peso válido.");
       return;
+    }
+
+    if (weightNum < MIN_WEIGHT || weightNum > MAX_WEIGHT) {
+      Alert.alert("Erro", `Peso deve estar entre ${MIN_WEIGHT}kg e ${MAX_WEIGHT}kg.`);
+      return;
+    }
+
+    // Alerta de saúde para peso acima de 200kg
+    if (weightNum > HEALTH_WARNING_WEIGHT) {
+      Alert.alert("⚠️ Atenção", "Você está muito pesado, procure um médico.");
     }
 
     // Regex simples para garantir formato HH:MM
@@ -43,21 +77,33 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
       return;
     }
 
+    // Validação: horário de acordar deve ser antes do horário de dormir
+    const timeToMinutes = (time: string): number => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
+      Alert.alert("Erro", "O horário de acordar deve ser antes do horário de dormir.");
+      return;
+    }
+
     // Salva a nova configuração
     onSave({
       weight: weightNum,
       startTime,
       endTime,
       intervalMinutes: interval,
-      dailyGoalMl: weightNum * 35, // Recalcula a meta aqui
+      dailyGoalMl: weightNum * ML_PER_KG,
     });
     onClose();
   };
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
           <Text style={styles.modalTitle}>Configurar Jornada</Text>
 
           {/* Campo Peso */}
@@ -65,17 +111,18 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
             <Text style={styles.label}>Seu Peso (kg)</Text>
             <TextInput
               style={styles.input}
-              keyboardType="numeric"
+              keyboardType="number-pad"
               value={weight}
-              onChangeText={setWeight}
-              placeholder="Ex: 70"
+              onChangeText={handleWeightChange}
+              placeholder="Ex: 70,00"
+              maxLength={6}
             />
           </View>
 
           {/* Campos de Horário (Lado a Lado) */}
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-              <Text style={styles.label}>Acordo às</Text>
+              <Text style={styles.label}>Horário Inicial</Text>
               <TextInput
                 style={styles.input}
                 value={startTime}
@@ -85,7 +132,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               />
             </View>
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Durmo às</Text>
+              <Text style={styles.label}>Horário Final</Text>
               <TextInput
                 style={styles.input}
                 value={endTime}
@@ -123,8 +170,9 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               <Text style={styles.textStyle}>Salvar</Text>
             </TouchableOpacity>
           </View>
+          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }

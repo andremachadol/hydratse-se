@@ -1,5 +1,5 @@
 // src/components/ProgressRing.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { COLORS } from '../constants/theme';
@@ -10,7 +10,7 @@ interface ProgressRingProps {
   percentage: number;
 }
 
-export default function ProgressRing({ consumed, goal, percentage }: ProgressRingProps) {
+function ProgressRing({ consumed, goal, percentage }: ProgressRingProps) {
   const radius = 100; // Raio do círculo
   const strokeWidth = 20; // Espessura da linha
   const circumference = 2 * Math.PI * radius; // 2 * PI * R
@@ -64,3 +64,5 @@ const styles = StyleSheet.create({
   percentageText: { fontSize: 48, fontWeight: 'bold', color: COLORS.primary },
   amountText: { fontSize: 16, color: COLORS.textLight, marginTop: 5 },
 });
+
+export default memo(ProgressRing);

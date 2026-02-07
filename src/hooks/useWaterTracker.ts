@@ -1,9 +1,19 @@
 // src/hooks/useWaterTracker.ts
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { scheduleHydrationReminders } from '../utils/notifications';
+import { Alert, Platform } from 'react-native';
+import { scheduleHydrationReminders, requestNotificationPermission } from '../utils/notifications';
 import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types';
+import * as Storage from '../services/storage';
+import {
+  DEFAULT_WEIGHT,
+  DEFAULT_START_TIME,
+  DEFAULT_END_TIME,
+  DEFAULT_INTERVAL_MINUTES,
+  DEFAULT_DAILY_GOAL,
+  ML_PER_KG,
+  ROUNDING_STEP,
+  FALLBACK_DRINK_AMOUNT,
+} from '../constants/config';
 
 // ==========================================
 // HELPERS (Funções Auxiliares)
@@ -30,11 +40,11 @@ const timeToMinutes = (time: string): number => {
 
 // Configuração Padrão (Evita crash se não tiver nada salvo)
 const DEFAULT_CONFIG: UserConfig = {
-  weight: 70,
-  startTime: '08:00',
-  endTime: '22:00',
-  intervalMinutes: 60,
-  dailyGoalMl: 2450 // 70kg * 35ml
+  weight: DEFAULT_WEIGHT,
+  startTime: DEFAULT_START_TIME,
+  endTime: DEFAULT_END_TIME,
+  intervalMinutes: DEFAULT_INTERVAL_MINUTES,
+  dailyGoalMl: DEFAULT_DAILY_GOAL,
 };
 
 // ==========================================
@@ -53,6 +63,9 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   // Estado para o tamanho do próximo copo (Dinâmico)
   const [nextDrinkAmount, setNextDrinkAmount] = useState(250);
 
+  // Estado de carregamento
+  const [isLoading, setIsLoading] = useState(true);
+
   // 1. Carregar dados ao abrir o app
   useEffect(() => {
     loadData();
@@ -65,21 +78,28 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
   // --- CARREGAMENTO DE DADOS (COM VACINA ANTI-CRASH) ---
   const loadData = async () => {
+    setIsLoading(true);
     try {
-      const savedConfig = await AsyncStorage.getItem('@config');
-      const savedProgress = await AsyncStorage.getItem('@progress');
-
+      // Carrega config com validação via Storage service
+      const savedConfig = await Storage.loadConfig();
       if (savedConfig) {
-        const parsedConfig = JSON.parse(savedConfig);
-        // Merge: Garante que campos novos (startTime) existam mesmo em usuários antigos
-        setConfig({ ...DEFAULT_CONFIG, ...parsedConfig });
+        // Merge: Garante que campos novos existam mesmo em usuários antigos
+        setConfig({ ...DEFAULT_CONFIG, ...savedConfig });
       }
-      
+
+      // Carrega progress com validação via Storage service
+      const savedProgress = await Storage.loadProgress();
       if (savedProgress) {
-        setProgress(JSON.parse(savedProgress));
+        setProgress(savedProgress);
       }
-    } catch (e) {
-      console.error("Erro ao carregar dados", e);
+
+      // Solicita permissão de notificação ao carregar o app
+      await requestNotificationPermission();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('Erro ao carregar dados:', message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,7 +122,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const standardCupSize = config.dailyGoalMl / safeSlots;
     
     // Arredonda para ficar bonito (318.5 -> 320ml)
-    const roundedStandardCup = Math.ceil(standardCupSize / 10) * 10;
+    const roundedStandardCup = Math.ceil(standardCupSize / ROUNDING_STEP) * ROUNDING_STEP;
 
     // 3. Definição do Próximo Gole
     let finalAmount = 0;
@@ -125,21 +145,21 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   }, [config, progress.consumedMl])
 
   // --- SALVAR CONFIGURAÇÃO ---
-  const saveConfig = async (newConfig: UserConfig) => {
-    // Recalcula a meta total baseada no peso automaticamente (35ml/kg)
+  const saveConfigData = async (newConfig: UserConfig) => {
+    // Recalcula a meta total baseada no peso automaticamente
     const updatedConfig = {
       ...newConfig,
-      dailyGoalMl: newConfig.weight * 35
+      dailyGoalMl: newConfig.weight * ML_PER_KG,
     };
     setConfig(updatedConfig);
-    await AsyncStorage.setItem('@config', JSON.stringify(updatedConfig));
+    await Storage.saveConfig(updatedConfig);
     // O useEffect vai disparar o recalculateNextDrink automaticamente
   };
 
   // --- SALVAR PROGRESSO ---
-  const saveProgress = async (newProgress: DayProgress) => {
+  const saveProgressData = async (newProgress: DayProgress) => {
     setProgress(newProgress);
-    await AsyncStorage.setItem('@progress', JSON.stringify(newProgress));
+    await Storage.saveProgress(newProgress);
   };
 
   // --- BEBER ÁGUA (ADD DRINK) ---
@@ -147,13 +167,13 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const today = getTodayDate();
     const yesterday = getYesterdayDate();
     
-    // Usa o valor calculado dinamicamente. Se for 0 (meta batida), usa 250 de fallback.
-    const amountToDrink = nextDrinkAmount > 0 ? nextDrinkAmount : 250;
+    // Usa o valor calculado dinamicamente. Se for 0 (meta batida), usa fallback.
+    const amountToDrink = nextDrinkAmount > 0 ? nextDrinkAmount : FALLBACK_DRINK_AMOUNT;
     
-    const newDrink: Drink = { 
-      id: Date.now(), 
-      amount: amountToDrink, 
-      timestamp: new Date() 
+    const newDrink: Drink = {
+      id: Date.now(),
+      amount: amountToDrink,
+      timestamp: new Date().toISOString()
     };
     
     // Lógica de Streak (Sequência)
@@ -180,23 +200,29 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       lastDrinkDate: today
     };
 
-await saveProgress(newProgress);
+await saveProgressData(newProgress);
     
     // FEEDBACK INTELIGENTE
+    const reminderConfig = {
+      startTime: config.startTime,
+      endTime: config.endTime,
+      intervalMinutes: config.intervalMinutes,
+    };
+
     if (isNewDay) {
-       scheduleHydrationReminders();
-    } 
+      scheduleHydrationReminders(reminderConfig);
+    }
     // Se acabou de bater a meta EXATAMENTE agora (cruzou a linha de chegada)
     else if (progress.consumedMl < config.dailyGoalMl && newProgress.consumedMl >= config.dailyGoalMl) {
       Alert.alert("🎉 Meta Batida!", "Você atingiu 100% da sua hidratação hoje!");
-    } 
+    }
     // Se JÁ TINHA batido a meta e continua bebendo (Modo Infinito)
     else if (newProgress.consumedMl > config.dailyGoalMl) {
-       // Opcional: Não faz nada (silencioso) ou dá um toast simples.
-       // Vamos deixar sem Alert para não ser chato, o usuário vê o número subir.
-    } 
+      // Opcional: Não faz nada (silencioso) ou dá um toast simples.
+      // Vamos deixar sem Alert para não ser chato, o usuário vê o número subir.
+    }
     else {
-      scheduleHydrationReminders();
+      scheduleHydrationReminders(reminderConfig);
     }
   };
 
@@ -220,29 +246,39 @@ await saveProgress(newProgress);
       streak: newStreak
     };
 
-    await saveProgress(newProgress);
+    await saveProgressData(newProgress);
   };
 
   // --- ZERAR O DIA (RESET) ---
-  const resetDay = () => {
-    Alert.alert(
-      "Reiniciar o dia?",
-      "O histórico de hoje será apagado.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Sim, Zerar", 
-          style: "destructive",
-          onPress: async () => {
-            // Se zerar, perde o streak do dia
-            const newStreak = progress.drinks.length > 0 ? Math.max(0, progress.streak - 1) : progress.streak;
-            const newProgress = { ...progress, consumedMl: 0, drinks: [], streak: newStreak };
-            await saveProgress(newProgress);
+  const resetDay = async () => {
+    const doReset = async () => {
+      // Se zerar, perde o streak do dia
+      const newStreak = progress.drinks.length > 0 ? Math.max(0, progress.streak - 1) : progress.streak;
+      const newProgress = { ...progress, consumedMl: 0, drinks: [], streak: newStreak };
+      await saveProgressData(newProgress);
+    };
+
+    // Na web, usar window.confirm pois Alert.alert não funciona corretamente
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Reiniciar o dia?\n\nO histórico de hoje será apagado.');
+      if (confirmed) {
+        await doReset();
+      }
+    } else {
+      Alert.alert(
+        "Reiniciar o dia?",
+        "O histórico de hoje será apagado.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Sim, Zerar",
+            style: "destructive",
+            onPress: doReset
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
-  return { config, progress, nextDrinkAmount, saveConfig, addDrink, undoLastDrink, resetDay };
+  return { config, progress, nextDrinkAmount, isLoading, saveConfig: saveConfigData, addDrink, undoLastDrink, resetDay };
 };

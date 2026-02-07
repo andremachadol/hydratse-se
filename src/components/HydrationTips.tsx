@@ -1,5 +1,5 @@
 // src/components/HydrationTips.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/theme';
 
@@ -13,7 +13,7 @@ const TIPS = [
   "❄️ Água gelada ativa o metabolismo."
 ];
 
-export default function HydrationTips() {
+function HydrationTips() {
   const [tip, setTip] = useState("");
 
   useEffect(() => {
@@ -59,3 +59,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default memo(HydrationTips);

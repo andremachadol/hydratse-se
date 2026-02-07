@@ -3,7 +3,7 @@
 export interface Drink {
   id: number;
   amount: number;
-  timestamp: Date | string;
+  timestamp: string; // ISO string format
 }
 
 // A Configuração agora reflete a Rotina do usuário
@@ -27,6 +27,7 @@ export interface WaterTrackerReturn {
   config: UserConfig;
   progress: DayProgress;
   nextDrinkAmount: number; // <--- O novo valor dinâmico
+  isLoading: boolean;
   saveConfig: (newConfig: UserConfig) => Promise<void>;
   addDrink: () => Promise<void>;
   undoLastDrink: () => Promise<void>;

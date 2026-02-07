@@ -1,6 +1,6 @@
 // src/screens/HomeScreen.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -22,25 +22,42 @@ const ESPACO_DICA_BOTAO = 30;    // Distância entre a Dica e o Botão de Beber
 // ---------------------------------------------------------
 
 export default function HomeScreen() {
-  const { config, progress, nextDrinkAmount, saveConfig, addDrink, undoLastDrink, resetDay } = useWaterTracker();
+  const { config, progress, nextDrinkAmount, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } = useWaterTracker();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const percentage = config.dailyGoalMl > 0 
+  const percentage = config.dailyGoalMl > 0
     ? Math.round((progress.consumedMl / config.dailyGoalMl) * 100)
     : 0;
 
+  // Tela de loading enquanto carrega dados
+  if (isLoading) {
+    return (
+      <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
+        <StatusBar style="dark" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </LinearGradient>
+    );
+  }
+
   return (
     <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
-      <StatusBar style="dark" /> 
-      
+      <StatusBar style="dark" />
+
       {/* 1. HEADER (Fixo no topo) */}
       <View style={styles.headerContainer}>
-        <View style={styles.streakContainer}>
-           <Text style={styles.streakIcon}>🔥</Text>
+        <View style={styles.streakContainer} accessibilityLabel={`Sequência de ${progress.streak} dias`}>
+           <Text style={styles.streakIcon} accessibilityLabel="Dias em sequência">🔥</Text>
            <Text style={styles.streakText}>{progress.streak}</Text>
         </View>
-        <Text style={styles.appName}>Hydrate-Se 💧</Text>
-        <TouchableOpacity style={styles.settingsButton} onPress={() => setModalVisible(true)}>
+        <Text style={styles.appName} accessibilityRole="header">Hydrate-Se 💧</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setModalVisible(true)}
+          accessibilityLabel="Abrir configurações"
+          accessibilityRole="button"
+        >
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
@@ -101,11 +118,16 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    alignItems: 'center', 
+  container: {
+    flex: 1,
+    alignItems: 'center',
     paddingTop: 60,
     // Não usamos mais justify 'space-between' aqui para ter controle manual
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
   headerContainer: {
