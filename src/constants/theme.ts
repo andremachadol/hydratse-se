@@ -9,8 +9,8 @@ export const TIPS = [
 ];
 
 export const COLORS = {
-  // Gradiente do fundo
-  backgroundGradient: ['#F0F9FF', '#D1F0FC', '#A5E6FD'],
+  // Adicione o "as const" aqui no final 👇
+  backgroundGradient: ['#F0F9FF', '#D1F0FC', '#A5E6FD'] as const,
   
   // Cores principais
   primary: '#00B4D8',      // Azul claro do botão e do anel
