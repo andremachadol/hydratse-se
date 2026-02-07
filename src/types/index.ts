@@ -1,30 +1,32 @@
 // src/types/index.ts
 
-// Define o formato de um "gole" de água
 export interface Drink {
   id: number;
   amount: number;
-  timestamp: Date; // ou string, dependendo de como salvamos, mas Date na memória é melhor
+  timestamp: Date | string;
 }
 
-// Define as configurações do usuário
+// A Configuração agora reflete a Rotina do usuário
 export interface UserConfig {
-  dailyGoalMl: number;
-  perDrinkMl: number;
+  weight: number;        // Peso em Kg (base do cálculo)
+  startTime: string;     // Hora de acordar "08:00"
+  endTime: string;       // Hora de dormir "22:00"
+  intervalMinutes: number; // 30 ou 60 minutos
+  // O dailyGoal ainda existe, mas é calculado baseado no peso
+  dailyGoalMl: number; 
 }
 
-// Define o progresso do dia
 export interface DayProgress {
   consumedMl: number;
   drinks: Drink[];
   streak: number;
-  lastDrinkDate: string; // YYYY-MM-DD
+  lastDrinkDate: string;
 }
 
-// Define o que o nosso Hook retorna (a interface pública dele)
 export interface WaterTrackerReturn {
   config: UserConfig;
   progress: DayProgress;
+  nextDrinkAmount: number; // <--- O novo valor dinâmico
   saveConfig: (newConfig: UserConfig) => Promise<void>;
   addDrink: () => Promise<void>;
   undoLastDrink: () => Promise<void>;

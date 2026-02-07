@@ -1,7 +1,7 @@
 // src/components/DrinkControls.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Droplet, Undo2, Trash2 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/theme';
 
 interface DrinkControlsProps {
@@ -15,34 +15,117 @@ interface DrinkControlsProps {
 export default function DrinkControls({ onDrink, onUndo, onReset, drinkSize, hasHistory }: DrinkControlsProps) {
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.drinkBtn} onPress={onDrink}>
-        <Droplet color={COLORS.white} size={32} fill={COLORS.white} />
-        <Text style={styles.drinkBtnText}>Beber {drinkSize}ml</Text>
+      
+      {/* BOTÃO PRINCIPAL (Estilo Antigo Restaurado) */}
+      <TouchableOpacity 
+        onPress={onDrink}
+        activeOpacity={0.8}
+        style={styles.shadowContainer} // Sombra separada para não bugar o gradiente
+      >
+        <LinearGradient
+          colors={[COLORS.primary, '#4fa3d1']} // Gradiente sutil
+          style={styles.mainButton}
+        >
+          <Text style={styles.mainButtonText}>
+            {drinkSize > 0 ? `+ ${drinkSize} ml` : "Meta Batida!"}
+          </Text>
+          <Text style={styles.subText}>Beber Agora</Text>
+        </LinearGradient>
       </TouchableOpacity>
 
-      {hasHistory && (
-        <View style={styles.secondaryButtons}>
-          <TouchableOpacity style={styles.actionBtn} onPress={onUndo}>
-            <Undo2 color={COLORS.textLight} size={20} />
-            <Text style={styles.actionBtnText}>Desfazer</Text>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.actionBtn} onPress={onReset}>
-            <Trash2 color={COLORS.danger} size={20} />
-            <Text style={[styles.actionBtnText, { color: COLORS.danger }]}>Zerar</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* ÁREA RESERVADA (Mantida para evitar o pulo) */}
+      <View style={styles.bottomRow}>
+        {hasHistory ? (
+          <>
+            <TouchableOpacity style={styles.secondaryButton} onPress={onUndo}>
+              <Text style={styles.secondaryButtonText}>↩ Desfazer</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.secondaryButton, styles.resetButton]} onPress={onReset}>
+              <Text style={[styles.secondaryButtonText, styles.resetText]}>🗑️ Zerar</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
+      </View>
+
     </View>
   );
 }
-// ... (Styles continuam iguais, pode copiar do antigo ou manter se não apagou)
+
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', width: '100%' },
-  drinkBtn: { flexDirection: 'row', backgroundColor: COLORS.primary, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 30, alignItems: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.4, elevation: 8 },
-  drinkBtnText: { color: COLORS.white, fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
-  secondaryButtons: { flexDirection: 'row', alignItems: 'center', marginTop: 20, backgroundColor: COLORS.white, borderRadius: 20, padding: 5, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 20 },
-  actionBtnText: { marginLeft: 8, color: COLORS.textLight, fontSize: 14, fontWeight: '600' },
-  divider: { width: 1, height: 20, backgroundColor: COLORS.border },
+  container: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  
+  shadowContainer: {
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+    marginBottom: 25,
+  },
+
+  // Estilo restaurado: Botão largo e arredondado (Pílula), não círculo gigante
+  mainButton: {
+    width: 200, 
+    height: 70,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  mainButtonText: {
+    color: '#FFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  
+  subText: {
+    color: '#E0E0E0', // Um pouco mais claro
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+
+  // Área dos Botões Secundários (FIXA)
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
+    height: 50,
+    alignItems: 'center',
+  },
+
+  placeholder: {
+    height: 50,
+    width: '100%',
+  },
+
+  secondaryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+  },
+
+  resetButton: {
+    backgroundColor: '#FFF0F0',
+  },
+
+  secondaryButtonText: {
+    color: COLORS.textLight,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  resetText: {
+    color: COLORS.danger,
+  },
 });

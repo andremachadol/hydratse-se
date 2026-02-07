@@ -1,124 +1,153 @@
-// src/components/SettingsModal.js
+// src/components/SettingsModal.tsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert 
-} from 'react-native';
-import { X, Calculator } from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
-
+import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { UserConfig } from '../types';
+import { COLORS } from '../constants/theme';
 
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (newConfig: UserConfig) => void;
-  currentConfig: UserConfig;}
+  currentConfig: UserConfig;
+}
 
 export default function SettingsModal({ visible, onClose, onSave, currentConfig }: SettingsModalProps) {
-  const [tempGoal, setTempGoal] = useState('');
-  const [tempCup, setTempCup] = useState('');
-  const [tempWeight, setTempWeight] = useState('');
+  // Estados para os novos campos
+  const [weight, setWeight] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [interval, setInterval] = useState(60); // 30 ou 60 minutos
 
-  // Atualiza os campos quando abre o modal
+  // Carrega os dados atuais quando abre o modal
   useEffect(() => {
     if (visible) {
-      setTempGoal(currentConfig.dailyGoalMl.toString());
-      setTempCup(currentConfig.perDrinkMl.toString());
+      setWeight(currentConfig.weight.toString());
+      setStartTime(currentConfig.startTime);
+      setEndTime(currentConfig.endTime);
+      setInterval(currentConfig.intervalMinutes);
     }
   }, [visible, currentConfig]);
 
   const handleSave = () => {
-    if (!tempGoal || !tempCup) return;
-    onSave({ dailyGoalMl: parseInt(tempGoal), perDrinkMl: parseInt(tempCup) });
+    // Validação básica
+    const weightNum = parseFloat(weight.replace(',', '.'));
+    if (!weightNum || weightNum <= 0) {
+      Alert.alert("Erro", "Digite um peso válido.");
+      return;
+    }
+
+    // Regex simples para garantir formato HH:MM
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      Alert.alert("Erro", "Use o formato HH:MM (ex: 08:00).");
+      return;
+    }
+
+    // Salva a nova configuração
+    onSave({
+      weight: weightNum,
+      startTime,
+      endTime,
+      intervalMinutes: interval,
+      dailyGoalMl: weightNum * 35, // Recalcula a meta aqui
+    });
     onClose();
-  };
-
-  const calculateByWeight = () => {
-    if (!tempWeight) return;
-    const weight = parseFloat(tempWeight.replace(',', '.'));
-    if (!weight || weight <= 0) return Alert.alert("Ops", "Peso inválido");
-
-    const suggestion = Math.ceil((weight * 35) / 50) * 50; // 35ml/kg arredondado
-    Alert.alert("Sugestão", `Baseado no peso: ${suggestion}ml`, [
-      { text: "Usar", onPress: () => setTempGoal(suggestion.toString()) }
-    ]);
   };
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.innerContainer}>
-            <View style={styles.content}>
-              
-              {/* Cabeçalho */}
-              <View style={styles.header}>
-                <Text style={styles.title}>Configurações</Text>
-                <TouchableOpacity onPress={onClose}><X color={COLORS.textDark} size={24} /></TouchableOpacity>
-              </View>
+      <View style={styles.centeredView}>
+        <View style={styles.modalView}>
+          <Text style={styles.modalTitle}>Configurar Jornada</Text>
 
-              {/* Calculadora */}
-              <View style={styles.calcBox}>
-                <Text style={styles.calcLabel}>Calcular pelo peso:</Text>
-                <View style={styles.row}>
-                  <TextInput 
-                    style={[styles.input, { flex: 1, marginTop: 0 }]} 
-                    placeholder="kg" 
-                    keyboardType="decimal-pad"
-                    value={tempWeight}
-                    onChangeText={setTempWeight}
-                  />
-                  <TouchableOpacity style={styles.calcBtn} onPress={calculateByWeight}>
-                    <Calculator color={COLORS.white} size={20} />
-                  </TouchableOpacity>
-                </View>
-              </View>
+          {/* Campo Peso */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Seu Peso (kg)</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={weight}
+              onChangeText={setWeight}
+              placeholder="Ex: 70"
+            />
+          </View>
 
-              <View style={styles.divider} />
-
-              {/* Inputs Principais */}
-              <Text style={styles.label}>Meta Diária (ml)</Text>
-              <TextInput 
-                style={styles.input} 
-                keyboardType="numeric" 
-                value={tempGoal} 
-                onChangeText={setTempGoal} 
+          {/* Campos de Horário (Lado a Lado) */}
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+              <Text style={styles.label}>Acordo às</Text>
+              <TextInput
+                style={styles.input}
+                value={startTime}
+                onChangeText={setStartTime}
+                placeholder="08:00"
+                maxLength={5}
               />
-
-              <Text style={styles.label}>Tamanho do Copo (ml)</Text>
-              <TextInput 
-                style={styles.input} 
-                keyboardType="numeric" 
-                value={tempCup} 
-                onChangeText={setTempCup} 
+            </View>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Durmo às</Text>
+              <TextInput
+                style={styles.input}
+                value={endTime}
+                onChangeText={setEndTime}
+                placeholder="22:00"
+                maxLength={5}
               />
-
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                <Text style={styles.saveText}>Salvar Alterações</Text>
-              </TouchableOpacity>
-
             </View>
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+
+          {/* Seleção de Intervalo */}
+          <Text style={styles.label}>Lembrar a cada:</Text>
+          <View style={styles.intervalContainer}>
+            <TouchableOpacity 
+              style={[styles.intervalBtn, interval === 30 && styles.intervalBtnSelected]}
+              onPress={() => setInterval(30)}
+            >
+              <Text style={[styles.intervalText, interval === 30 && styles.intervalTextSelected]}>30 min</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.intervalBtn, interval === 60 && styles.intervalBtnSelected]}
+              onPress={() => setInterval(60)}
+            >
+              <Text style={[styles.intervalText, interval === 60 && styles.intervalTextSelected]}>1 Hora</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Botões de Ação */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
+              <Text style={styles.textStyle}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, styles.buttonSave]} onPress={handleSave}>
+              <Text style={styles.textStyle}>Salvar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  innerContainer: { flex: 1, justifyContent: 'flex-end' },
-  content: { backgroundColor: COLORS.white, borderTopLeftRadius: 25, borderTopRightRadius: 25, padding: 25, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  title: { fontSize: 20, fontWeight: 'bold', color: COLORS.textDark },
-  calcBox: { backgroundColor: '#F0F9FF', padding: 15, borderRadius: 10 },
-  calcLabel: { color: COLORS.secondary, fontWeight: 'bold', marginBottom: 5 },
-  row: { flexDirection: 'row', gap: 10 },
-  calcBtn: { backgroundColor: COLORS.secondary, width: 50, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 15 },
-  label: { marginTop: 10, fontWeight: '600', color: COLORS.textLight },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 12, marginTop: 5, fontSize: 16, backgroundColor: '#FAFAFA' },
-  saveBtn: { backgroundColor: COLORS.secondary, padding: 15, borderRadius: 10, marginTop: 25, alignItems: 'center' },
-  saveText: { color: COLORS.white, fontWeight: 'bold', fontSize: 16 },
+  centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalView: { width: '85%', backgroundColor: 'white', borderRadius: 20, padding: 25, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: COLORS.secondary },
+  
+  inputGroup: { width: '100%', marginBottom: 15 },
+  row: { flexDirection: 'row', width: '100%', justifyContent: 'space-between' },
+  label: { fontSize: 14, color: COLORS.textLight, marginBottom: 5, fontWeight: '600' },
+  input: { width: '100%', height: 50, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, fontSize: 16, backgroundColor: '#F9F9F9' },
+  
+  intervalContainer: { flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginBottom: 25 },
+  intervalBtn: { flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, alignItems: 'center', marginHorizontal: 5, backgroundColor: '#FFF' },
+  intervalBtnSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  intervalText: { color: COLORS.textLight, fontWeight: '600' },
+  intervalTextSelected: { color: 'white' },
+
+  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+  button: { borderRadius: 10, padding: 15, elevation: 2, flex: 0.45, alignItems: 'center' },
+  buttonSave: { backgroundColor: COLORS.primary },
+  buttonCancel: { backgroundColor: COLORS.danger },
+  textStyle: { color: 'white', fontWeight: 'bold', textAlign: 'center' },
 });
