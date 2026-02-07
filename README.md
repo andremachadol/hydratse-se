@@ -1,4 +1,4 @@
-# 💧 HidrateApp - Seu Assistente Pessoal de Hidratação
+#  Hydrate-se💧 Seu Assistente Pessoal de Hidratação
 
 ![Status do Projeto](https://img.shields.io/badge/Status-Concluído-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
@@ -7,7 +7,7 @@
 
 > "Pequenos goles, grandes mudanças."
 
-O **HidrateApp** é um aplicativo móvel focado em ajudar usuários a manterem hábitos saudáveis de hidratação. Diferente de simples contadores, ele utiliza um algoritmo inteligente que adapta a meta diária baseada no peso do usuário e na jornada de trabalho, além de garantir a integridade dos dados através de tipagem estática rigorosa.
+O **Hydrate-se💧** é um aplicativo móvel focado em ajudar usuários a manterem hábitos saudáveis de hidratação. Diferente de simples contadores, ele utiliza um algoritmo inteligente que adapta a meta diária baseada no peso do usuário e na jornada de trabalho, além de garantir a integridade dos dados através de tipagem estática rigorosa.
 
 ---
 
