@@ -14,9 +14,7 @@ O **Hydrate-se 💧** é um aplicativo móvel focado em ajudar usuários a mante
 
 ## 🎬 Demo
 
-https://github.com/user-attachments/assets/demo.mp4
-
-<!-- Substitua o link acima pelo URL real após fazer upload do vídeo no GitHub -->
+https://github.com/user-attachments/assets/f5dfa5de-b467-4e9c-8b18-9a581f73f8ef
 
 ---
 
