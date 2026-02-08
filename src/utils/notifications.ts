@@ -1,11 +1,10 @@
 // src/utils/notifications.ts
 import * as Notifications from 'expo-notifications';
+import { timeToMinutes } from './time';
+import { UserConfig } from '../types';
 
-interface ReminderConfig {
-  startTime: string;  // "08:00"
-  endTime: string;    // "22:00"
-  intervalMinutes: number;  // 30 ou 60
-}
+// Usa apenas os campos necessários de UserConfig
+type ReminderConfig = Pick<UserConfig, 'startTime' | 'endTime' | 'intervalMinutes'>;
 
 // Configura como o celular reage quando chega notificação com o app aberto
 Notifications.setNotificationHandler({
@@ -35,13 +34,6 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
     console.error('Erro ao solicitar permissão de notificação:', message);
     return false;
   }
-};
-
-// Converte "08:30" em minutos totais do dia (ex: 510)
-const timeToMinutes = (time: string): number => {
-  if (!time) return 0;
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
 };
 
 // Função para agendar os lembretes baseado na config do usuário

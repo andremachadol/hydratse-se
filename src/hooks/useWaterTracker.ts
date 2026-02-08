@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
 import { scheduleHydrationReminders, requestNotificationPermission } from '../utils/notifications';
+import { timeToMinutes, getTodayDate, getYesterdayDate } from '../utils/time';
 import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types';
 import * as Storage from '../services/storage';
 import { Logger } from '../services/logger';
@@ -16,34 +17,11 @@ import {
   FALLBACK_DRINK_AMOUNT,
 } from '../constants/config';
 
-// ==========================================
-// HELPERS (Funções Auxiliares)
-// ==========================================
-
 // Gera ID único (timestamp + random para evitar colisões)
 const generateId = (): string => {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 9);
   return `${timestamp}-${randomPart}`;
-};
-
-// Retorna YYYY-MM-DD de HOJE
-const getTodayDate = (): string => {
-  return new Date().toISOString().split('T')[0];
-};
-
-// Retorna YYYY-MM-DD de ONTEM (Para checar sequência/streak)
-const getYesterdayDate = (): string => {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().split('T')[0];
-};
-
-// Converte "08:30" em minutos totais do dia (ex: 510)
-const timeToMinutes = (time: string): number => {
-  if (!time) return 0;
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
 };
 
 // Configuração Padrão (Evita crash se não tiver nada salvo)

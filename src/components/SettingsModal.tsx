@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { UserConfig } from '../types';
-import { COLORS } from '../constants/theme';
+import { COLORS, SHADOWS } from '../constants/theme';
 import { MIN_WEIGHT, MAX_WEIGHT, HEALTH_WARNING_WEIGHT, ML_PER_KG } from '../constants/config';
+import { timeToMinutes } from '../utils/time';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -78,11 +79,6 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
     }
 
     // Validação: horário de acordar deve ser antes do horário de dormir
-    const timeToMinutes = (time: string): number => {
-      const [h, m] = time.split(':').map(Number);
-      return h * 60 + m;
-    };
-
     if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
       Alert.alert("Erro", "O horário de acordar deve ser antes do horário de dormir.");
       return;
@@ -179,16 +175,16 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
 
 const styles = StyleSheet.create({
   centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalView: { width: '85%', backgroundColor: 'white', borderRadius: 20, padding: 25, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  modalView: { width: '85%', backgroundColor: COLORS.white, borderRadius: 20, padding: 25, alignItems: 'center', ...SHADOWS.medium },
   modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: COLORS.secondary },
   
   inputGroup: { width: '100%', marginBottom: 15 },
   row: { flexDirection: 'row', width: '100%', justifyContent: 'space-between' },
   label: { fontSize: 14, color: COLORS.textLight, marginBottom: 5, fontWeight: '600' },
-  input: { width: '100%', height: 50, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, fontSize: 16, backgroundColor: '#F9F9F9' },
+  input: { width: '100%', height: 50, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, fontSize: 16, backgroundColor: COLORS.surface },
   
   intervalContainer: { flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginBottom: 25 },
-  intervalBtn: { flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, alignItems: 'center', marginHorizontal: 5, backgroundColor: '#FFF' },
+  intervalBtn: { flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, alignItems: 'center', marginHorizontal: 5, backgroundColor: COLORS.white },
   intervalBtnSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   intervalText: { color: COLORS.textLight, fontWeight: '600' },
   intervalTextSelected: { color: 'white' },

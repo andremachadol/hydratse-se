@@ -1,5 +1,5 @@
 // src/screens/HomeScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,9 +25,11 @@ export default function HomeScreen() {
   const { config, progress, nextDrinkAmount, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } = useWaterTracker();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const percentage = config.dailyGoalMl > 0
-    ? Math.round((progress.consumedMl / config.dailyGoalMl) * 100)
-    : 0;
+  const percentage = useMemo(() => {
+    return config.dailyGoalMl > 0
+      ? Math.round((progress.consumedMl / config.dailyGoalMl) * 100)
+      : 0;
+  }, [progress.consumedMl, config.dailyGoalMl]);
 
   // Tela de loading enquanto carrega dados
   if (isLoading) {

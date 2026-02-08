@@ -2,7 +2,7 @@
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../constants/theme';
+import { COLORS, SHADOWS } from '../constants/theme';
 
 interface DrinkControlsProps {
   onDrink: () => void;
@@ -26,7 +26,7 @@ function DrinkControls({ onDrink, onUndo, onReset, drinkSize, hasHistory }: Drin
         accessibilityHint="Toque para registrar consumo de água"
       >
         <LinearGradient
-          colors={[COLORS.primary, '#4fa3d1']}
+          colors={[COLORS.primary, COLORS.primaryLight]}
           style={styles.mainButton}
         >
           <Text style={styles.mainButtonText}>
@@ -125,11 +125,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: COLORS.surfaceLight,
   },
 
   resetButton: {
-    backgroundColor: '#FFF0F0',
+    backgroundColor: COLORS.surfaceDanger,
   },
 
   secondaryButtonText: {

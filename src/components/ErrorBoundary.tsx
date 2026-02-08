@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: COLORS.backgroundGradient[0],
     padding: 20,
   },
   emoji: {
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   buttonText: {
-    color: 'white',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
   },

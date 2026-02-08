@@ -20,10 +20,6 @@ export const DEFAULT_INTERVAL_MINUTES = 60;
 // Arredondamento do copo (ml)
 export const ROUNDING_STEP = 10;
 
-// Notificações
-export const REMINDER_COUNT = 5;
-export const REMINDER_INTERVAL_HOURS = 1;
-
 // Fallback para quantidade de água
 export const FALLBACK_DRINK_AMOUNT = 250;
 

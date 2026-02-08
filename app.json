@@ -31,9 +31,6 @@
         "projectId": "8dcc9a95-1872-4071-bcd2-f98e97c6a5eb"
       }
     },
-    "owner": "andremachadols-organization",
-    "plugins": [
-      "@react-native-community/datetimepicker"
-    ]
+    "owner": "andremachadols-organization"
   }
 }
