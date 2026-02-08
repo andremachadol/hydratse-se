@@ -1,6 +1,6 @@
 // src/screens/HomeScreen.tsx
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -8,66 +8,61 @@ import ProgressRing from '../components/ProgressRing';
 import DrinkControls from '../components/DrinkControls';
 import SettingsModal from '../components/SettingsModal';
 import HydrationTips from '../components/HydrationTips';
+import SplashAnimation from '../components/SplashAnimation';
+
 import { COLORS } from '../constants/theme';
 import { useWaterTracker } from '../hooks/useWaterTracker';
 
-// ---------------------------------------------------------
-// 🎛️ PAINEL DE CONTROLE DE ESPAÇAMENTO
-// Mexa nestes números para ajustar a altura dos elementos!
-// ---------------------------------------------------------
-const ESPACO_TOPO_ANEL = 20;     // Distância entre o Título e o Anel
-const ESPACO_ANEL_META = 30;     // Distância entre o Anel e a Meta
-const ESPACO_META_DICA = 30;     // Distância entre a Meta e a Dica
-const ESPACO_DICA_BOTAO = 30;    // Distância entre a Dica e o Botão de Beber
-// ---------------------------------------------------------
+// --- CONFIGURAÇÃO MANUAL DE ESPAÇAMENTO ---
+const ESPACO_TOPO_ANEL = 20;
+const ESPACO_ANEL_META = 30;
+const ESPACO_META_DICA = 30;
+const ESPACO_DICA_BOTAO = 30;
 
 export default function HomeScreen() {
   const { config, progress, nextDrinkAmount, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } = useWaterTracker();
   const [modalVisible, setModalVisible] = useState(false);
+  const [isSplashFinished, setIsSplashFinished] = useState(false);
 
+  // Calcula porcentagem
   const percentage = useMemo(() => {
-    return config.dailyGoalMl > 0
+    return config.dailyGoalMl > 0 
       ? Math.round((progress.consumedMl / config.dailyGoalMl) * 100)
       : 0;
   }, [progress.consumedMl, config.dailyGoalMl]);
 
-  // Tela de loading enquanto carrega dados
-  if (isLoading) {
-    return (
-      <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
-        <StatusBar style="dark" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      </LinearGradient>
-    );
+  // SPLASH SCREEN (Mostra enquanto carrega ou anima)
+  if (isLoading || !isSplashFinished) {
+    return <SplashAnimation onFinish={() => setIsSplashFinished(true)} isLoading={isLoading} />;
   }
 
+  // TELA PRINCIPAL
   return (
-    <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
-      <StatusBar style="dark" />
-
-      {/* 1. HEADER (Fixo no topo) */}
+    <LinearGradient 
+      colors={COLORS.backgroundGradient} 
+      style={styles.container}
+    >
+      <StatusBar style="dark" /> 
+      
+      {/* --- HEADER --- */}
       <View style={styles.headerContainer}>
-        <View style={styles.streakContainer} accessibilityLabel={`Sequência de ${progress.streak} dias`}>
-           <Text style={styles.streakIcon} accessibilityLabel="Dias em sequência">🔥</Text>
+        <View style={styles.streakContainer}>
+           <Text style={styles.streakIcon}>🔥</Text>
            <Text style={styles.streakText}>{progress.streak}</Text>
         </View>
-        <Text style={styles.appName} accessibilityRole="header">Hydrate-Se 💧</Text>
-        <TouchableOpacity
-          style={styles.settingsButton}
+        <Text style={styles.appName}>Hydrate-Se 💧</Text>
+        <TouchableOpacity 
+          style={styles.settingsButton} 
           onPress={() => setModalVisible(true)}
-          accessibilityLabel="Abrir configurações"
-          accessibilityRole="button"
         >
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 2. CONTEÚDO (Centralizado Verticalmente) */}
+      {/* --- CONTEÚDO CENTRAL --- */}
       <View style={styles.contentContainer}>
         
-        {/* ANEL */}
+        {/* Anel */}
         <View style={{ marginTop: ESPACO_TOPO_ANEL }}>
           <ProgressRing 
             consumed={progress.consumedMl} 
@@ -76,7 +71,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* META + CONFIG */}
+        {/* Meta + Texto */}
         <TouchableOpacity 
           onPress={() => setModalVisible(true)} 
           style={[styles.metaContainer, { marginTop: ESPACO_ANEL_META }]}
@@ -90,13 +85,12 @@ export default function HomeScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* DICAS */}
-        {/* O container da dica já tem alinhamento próprio, aplicamos a margem aqui */}
+        {/* Dicas */}
         <View style={{ marginTop: ESPACO_META_DICA, width: '100%' }}>
           <HydrationTips />
         </View>
 
-        {/* CONTROLES */}
+        {/* Botões de Controle */}
         <View style={{ marginTop: ESPACO_DICA_BOTAO, width: '100%' }}>
           <DrinkControls 
             onDrink={addDrink} 
@@ -109,6 +103,7 @@ export default function HomeScreen() {
 
       </View>
 
+      {/* --- MODAL --- */}
       <SettingsModal 
         visible={modalVisible} 
         onClose={() => setModalVisible(false)} 
@@ -120,16 +115,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
+  container: { 
+    flex: 1, 
+    alignItems: 'center', 
     paddingTop: 60,
-    // Não usamos mais justify 'space-between' aqui para ter controle manual
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#FFF', // Fallback caso o gradiente falhe
   },
   
   headerContainer: {
@@ -138,21 +128,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 20,
-    marginBottom: 10, // Um respiro base do header
-    height: 50, // Altura fixa para o header não sambar
+    marginBottom: 10,
+    height: 50,
   },
 
   contentContainer: {
     flex: 1,
     width: '100%',
     alignItems: 'center',
-    // justifyContent: 'center', // Descomente se quiser tudo centralizado na tela verticalmente
   },
 
   streakContainer: { width: 50, flexDirection: 'row', alignItems: 'center' },
   streakIcon: { fontSize: 20 },
   streakText: { fontSize: 16, fontWeight: 'bold', color: COLORS.secondary, marginLeft: 4 },
-  appName: { fontSize: 28, fontWeight: 'bold', color: COLORS.secondary, textAlign: 'center', flex: 1 },
+  
+  appName: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    color: COLORS.secondary,
+    textAlign: 'center',
+    flex: 1, 
+  },
+
   settingsButton: { width: 50, alignItems: 'flex-end' },
   settingsIcon: { fontSize: 26 },
 
@@ -160,7 +157,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     paddingHorizontal: 20 
   },
-  
   metaText: { fontSize: 20, color: COLORS.secondary, fontWeight: '600', textAlign: 'center' },
   hintText: { fontSize: 12, color: COLORS.textLight, marginTop: 5, textAlign: 'center', opacity: 0.8 },
 });

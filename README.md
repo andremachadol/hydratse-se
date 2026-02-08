@@ -12,8 +12,17 @@ O **Hydrate-se 💧** é um aplicativo móvel focado em ajudar usuários a mante
 
 ---
 
+## 🎬 Demo
+
+https://github.com/user-attachments/assets/demo.mp4
+
+<!-- Substitua o link acima pelo URL real após fazer upload do vídeo no GitHub -->
+
+---
+
 ## 📱 Funcionalidades Principais
 
+- **Splash Animada:** Tela de carregamento com animação de enchimento de copo e efeito sonoro, com duração inteligente que se adapta ao tempo de carregamento do dispositivo
 - **Meta Inteligente:** Calculadora integrada que define a meta ideal baseada no peso corporal (35ml/kg)
 - **Anel de Progresso:** Visualização gráfica animada (SVG) do consumo diário em tempo real
 - **Lembretes Personalizados:** Notificações locais baseadas na sua jornada (horário de acordar/dormir e intervalo)
@@ -36,6 +45,7 @@ O **Hydrate-se 💧** é um aplicativo móvel focado em ajudar usuários a mante
 | Gráficos | react-native-svg |
 | Notificações | expo-notifications |
 | UI | expo-linear-gradient |
+| Áudio | expo-av |
 
 ---
 
@@ -48,7 +58,8 @@ src/
 │   ├── ErrorBoundary.tsx
 │   ├── HydrationTips.tsx
 │   ├── ProgressRing.tsx
-│   └── SettingsModal.tsx
+│   ├── SettingsModal.tsx
+│   └── SplashAnimation.tsx  # Splash screen animada com som
 ├── constants/
 │   ├── config.ts        # Configurações centralizadas (pesos, intervalos, etc.)
 │   └── theme.ts         # Cores e estilos globais
@@ -63,6 +74,10 @@ src/
 │   └── index.ts         # Interfaces TypeScript
 └── utils/
     └── notifications.ts # Agendamento de notificações
+
+assets/
+└── sounds/
+    └── filling.mp3       # Efeito sonoro da splash screen
 
 App.tsx                  # Ponto de entrada com ErrorBoundary
 ```
@@ -140,6 +155,12 @@ O app usa as seguintes constantes (editáveis em `src/constants/config.ts`):
 - [ ] Histórico semanal/mensal com gráficos
 - [ ] Sincronização com nuvem
 - [ ] Widget para tela inicial
+
+---
+
+## 🎵 Créditos
+
+- Efeito sonoro da splash screen por [Universfield](https://pixabay.com/users/universfield-28281460/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=191999) via [Pixabay](https://pixabay.com/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=191999)
 
 ---
 

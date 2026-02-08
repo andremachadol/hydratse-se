@@ -34,6 +34,7 @@ All app state is centralized in the `useWaterTracker` custom hook (`src/hooks/us
 ### Data Flow
 ```
 App.tsx → HomeScreen → useWaterTracker (state)
+                     ├─ SplashAnimation (loading screen with sound)
                      ├─ ProgressRing (display)
                      ├─ DrinkControls (actions)
                      ├─ SettingsModal (config)
@@ -60,6 +61,7 @@ Colors and tips defined in `src/constants/theme.ts`. Background uses a cyan grad
 - `src/screens/HomeScreen.tsx` - Main UI with manual spacing constants (ESPACO_*)
 - `src/utils/notifications.js` - Expo notification scheduling (5 hourly reminders)
 - `src/components/ProgressRing.tsx` - SVG circular progress using stroke-dashoffset
+- `src/components/SplashAnimation.tsx` - Animated splash with water fill, sound (expo-av), and smart duration
 
 ## Build Configuration
 
