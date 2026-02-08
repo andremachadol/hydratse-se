@@ -1,7 +1,7 @@
 // src/types/index.ts
 
 export interface Drink {
-  id: number;
+  id: string; // UUID único
   amount: number;
   timestamp: string; // ISO string format
 }

@@ -1,85 +1,152 @@
-#  Hydrate-se💧 Seu Assistente Pessoal de Hidratação
+# Hydrate-se 💧 Seu Assistente Pessoal de Hidratação
 
 ![Status do Projeto](https://img.shields.io/badge/Status-Concluído-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue)
 ![React Native](https://img.shields.io/badge/Framework-React_Native-blueviolet)
+![Expo](https://img.shields.io/badge/Expo-SDK_54-000020)
 
 > "Pequenos goles, grandes mudanças."
 
-O **Hydrate-se💧** é um aplicativo móvel focado em ajudar usuários a manterem hábitos saudáveis de hidratação. Diferente de simples contadores, ele utiliza um algoritmo inteligente que adapta a meta diária baseada no peso do usuário e na jornada de trabalho, além de garantir a integridade dos dados através de tipagem estática rigorosa.
+O **Hydrate-se 💧** é um aplicativo móvel focado em ajudar usuários a manterem hábitos saudáveis de hidratação. Diferente de simples contadores, ele utiliza um algoritmo inteligente que adapta a meta diária baseada no peso do usuário e na jornada de trabalho, além de garantir a integridade dos dados através de tipagem estática rigorosa.
 
 ---
 
 ## 📱 Funcionalidades Principais
 
-✅ **Meta Inteligente:** Calculadora integrada que define a meta ideal baseada no peso corporal (35ml/kg).
-✅ **Anel de Progresso:** Visualização gráfica animada (SVG) do consumo diário em tempo real.
-✅ **Lembretes Automáticos:** Sistema de notificações locais que lembra o usuário de beber água a cada hora.
-✅ **Histórico Blindado:** Controle de datas em formato ISO (YYYY-MM-DD) para evitar erros de fuso horário ou idioma.
-✅ **Modo Foco:** Ajuste de meta dinâmica baseada nas horas de trabalho do dia.
-✅ **Arquitetura Robusta:** Código totalmente tipado (TypeScript) para maior segurança e escalabilidade.
+- **Meta Inteligente:** Calculadora integrada que define a meta ideal baseada no peso corporal (35ml/kg)
+- **Anel de Progresso:** Visualização gráfica animada (SVG) do consumo diário em tempo real
+- **Lembretes Personalizados:** Notificações locais baseadas na sua jornada (horário de acordar/dormir e intervalo)
+- **Histórico Blindado:** Controle de datas em formato ISO (YYYY-MM-DD) para evitar erros de fuso horário
+- **Modo Infinito:** Continue registrando água mesmo após bater a meta diária
+- **Streak (Sequência):** Acompanhe quantos dias consecutivos você manteve a hidratação
+- **Acessibilidade:** Labels e hints para leitores de tela
+- **Validação Robusta:** Peso (20-650kg), horários e dados persistidos validados
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-Este projeto foi refatorado para seguir os padrões mais modernos de desenvolvimento mobile:
-
-* **Linguagem:** [TypeScript](https://www.typescriptlang.org/) (Tipagem Estática)
-* **Core:** [React Native](https://reactnative.dev/) (Expo SDK)
-* **Gerenciamento de Estado:** React Hooks (Custom Hooks)
-* **Armazenamento Local:** `@react-native-async-storage/async-storage`
-* **Gráficos e Animações:** `react-native-svg` e `Animated API`
-* **Notificações:** `expo-notifications`
-* **Design:** `expo-linear-gradient` e `lucide-react-native`
+| Categoria | Tecnologia |
+|-----------|------------|
+| Linguagem | TypeScript 5.9 |
+| Framework | React Native 0.81 + Expo SDK 54 |
+| Estado | React Hooks (Custom Hook `useWaterTracker`) |
+| Armazenamento | AsyncStorage com abstração de serviço |
+| Gráficos | react-native-svg |
+| Notificações | expo-notifications |
+| UI | expo-linear-gradient |
 
 ---
 
 ## 📂 Arquitetura do Projeto
 
-O código segue uma estrutura modular, separando responsabilidades e definições de tipos:
+```
+src/
+├── components/          # Componentes visuais (memoizados)
+│   ├── DrinkControls.tsx
+│   ├── ErrorBoundary.tsx
+│   ├── HydrationTips.tsx
+│   ├── ProgressRing.tsx
+│   └── SettingsModal.tsx
+├── constants/
+│   ├── config.ts        # Configurações centralizadas (pesos, intervalos, etc.)
+│   └── theme.ts         # Cores e estilos globais
+├── hooks/
+│   └── useWaterTracker.ts  # Lógica principal de estado
+├── screens/
+│   └── HomeScreen.tsx   # Tela principal
+├── services/
+│   ├── logger.ts        # Logging estruturado
+│   └── storage.ts       # Abstração do AsyncStorage
+├── types/
+│   └── index.ts         # Interfaces TypeScript
+└── utils/
+    └── notifications.ts # Agendamento de notificações
 
-```text
-HidrateApp/
-├── src/
-│   ├── components/      # Componentes Visuais (.tsx)
-│   │   ├── DrinkControls.tsx
-│   │   ├── ProgressRing.tsx
-│   │   └── SettingsModal.tsx
-│   ├── hooks/           # Lógica de Negócio (.ts)
-│   │   └── useWaterTracker.ts
-│   ├── types/           # Definições de Tipos e Interfaces (.ts)
-│   │   └── index.ts
-│   ├── utils/           # Funções Auxiliares (.ts)
-│   │   └── notifications.ts
-│   └── constants/       # Temas e Textos Globais (.ts)
-├── App.tsx              # Ponto de Entrada
-├── tsconfig.json        # Configuração do TypeScript
-└── README.md            # Documentação
-🚀 Como Rodar o Projeto
-Pré-requisitos: Tenha o Node.js e o aplicativo Expo Go (no celular) instalados.
+App.tsx                  # Ponto de entrada com ErrorBoundary
+```
 
-Clone o repositório (ou baixe os arquivos):
+### Padrões Arquiteturais
 
-Bash
-git clone [https://github.com/SEU-USUARIO/hidrate-app.git](https://github.com/SEU-USUARIO/hidrate-app.git)
-Instale as dependências:
+- **Storage Service:** Abstração sobre AsyncStorage para facilitar troca futura de backend
+- **Config Centralizada:** Valores mágicos (35ml/kg, limites, etc.) em arquivo único
+- **Logger Service:** Logs estruturados para debug e monitoramento
+- **Error Boundary:** Captura de erros com tela amigável
+- **Memoização:** Componentes otimizados com `React.memo`
 
-Bash
+---
+
+## 🚀 Como Rodar o Projeto
+
+### Pré-requisitos
+
+- Node.js 18+
+- Expo Go (no celular) ou emulador Android/iOS
+
+### Instalação
+
+```bash
+# Clone o repositório
+git clone https://github.com/andremachadol/hydratse-se.git
+
+# Entre na pasta
+cd hydratse-se
+
+# Instale as dependências
 npm install
-# ou
-yarn install
-Inicie o servidor de desenvolvimento:
 
-Bash
+# Inicie o servidor
 npx expo start
-No Celular:
+```
 
-Escaneie o QR Code que aparecerá no terminal usando o app Expo Go.
+### Executar
 
-🧪 Próximos Passos (Roadmap)
+- **Celular:** Escaneie o QR Code com o app Expo Go
+- **Android:** Pressione `a` no terminal
+- **iOS:** Pressione `i` no terminal
+- **Web:** Pressione `w` no terminal
 
-[ ] Implementar Gamificação (Conquistas e Medalhas)
+### Build de Produção
 
-[ ] Adicionar suporte a Temas (Modo Escuro/Claro)
+```bash
+# APK para teste (Android)
+eas build --platform android --profile preview
+
+# Build de produção
+eas build --platform android --profile production
+```
+
+---
+
+## ⚙️ Configuração
+
+O app usa as seguintes constantes (editáveis em `src/constants/config.ts`):
+
+| Constante | Valor | Descrição |
+|-----------|-------|-----------|
+| `ML_PER_KG` | 35 | ml de água por kg de peso |
+| `MIN_WEIGHT` | 20 | Peso mínimo aceito (kg) |
+| `MAX_WEIGHT` | 650 | Peso máximo aceito (kg) |
+| `HEALTH_WARNING_WEIGHT` | 200 | Peso que dispara alerta de saúde |
+| `DEFAULT_INTERVAL_MINUTES` | 60 | Intervalo padrão entre lembretes |
+
+---
+
+## 🧪 Roadmap
+
+- [ ] Gamificação (Conquistas e Medalhas)
+- [ ] Modo Escuro/Claro
+- [ ] Histórico semanal/mensal com gráficos
+- [ ] Sincronização com nuvem
+- [ ] Widget para tela inicial
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+---
+
+Desenvolvido com 💧 por [André Machado](https://github.com/andremachadol)

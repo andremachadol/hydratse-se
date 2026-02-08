@@ -4,6 +4,7 @@ import { Alert, Platform } from 'react-native';
 import { scheduleHydrationReminders, requestNotificationPermission } from '../utils/notifications';
 import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types';
 import * as Storage from '../services/storage';
+import { Logger } from '../services/logger';
 import {
   DEFAULT_WEIGHT,
   DEFAULT_START_TIME,
@@ -18,6 +19,13 @@ import {
 // ==========================================
 // HELPERS (Funções Auxiliares)
 // ==========================================
+
+// Gera ID único (timestamp + random para evitar colisões)
+const generateId = (): string => {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 9);
+  return `${timestamp}-${randomPart}`;
+};
 
 // Retorna YYYY-MM-DD de HOJE
 const getTodayDate = (): string => {
@@ -153,6 +161,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     };
     setConfig(updatedConfig);
     await Storage.saveConfig(updatedConfig);
+    Logger.configSaved(updatedConfig.weight, updatedConfig.dailyGoalMl);
     // O useEffect vai disparar o recalculateNextDrink automaticamente
   };
 
@@ -171,26 +180,23 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const amountToDrink = nextDrinkAmount > 0 ? nextDrinkAmount : FALLBACK_DRINK_AMOUNT;
     
     const newDrink: Drink = {
-      id: Date.now(),
+      id: generateId(),
       amount: amountToDrink,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     
-    // Lógica de Streak (Sequência)
+    // Lógica de Streak (Sequência) - Simplificada
+    const isNewDay = progress.lastDrinkDate !== today;
+    const isFirstDrinkOfDay = progress.drinks.length === 0;
     let newStreak = progress.streak;
 
-    // Só mexe no streak se for o primeiro registro válido do dia
-    if (progress.drinks.length === 0) {
-      if (progress.lastDrinkDate === yesterday) {
-        newStreak += 1; // Manteve a sequência
-      } else if (progress.lastDrinkDate === today) {
-        newStreak += 1; // Caso de Undo e Refazer no mesmo dia
-      } else {
-        newStreak = 1; // Quebrou a sequência ou dia 1
-      }
+    if (isFirstDrinkOfDay) {
+      const continuedStreak = progress.lastDrinkDate === yesterday || progress.lastDrinkDate === today;
+      const oldStreak = progress.streak;
+      newStreak = continuedStreak ? oldStreak + 1 : 1;
+      Logger.streakUpdated(oldStreak, newStreak, continuedStreak ? 'continued' : 'reset');
     }
 
-    const isNewDay = progress.lastDrinkDate !== today;
     const newTotal = isNewDay ? amountToDrink : progress.consumedMl + amountToDrink;
 
     const newProgress: DayProgress = {
@@ -201,7 +207,10 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     };
 
 await saveProgressData(newProgress);
-    
+
+    // Log do drink
+    Logger.drink(amountToDrink, newTotal, config.dailyGoalMl);
+
     // FEEDBACK INTELIGENTE
     const reminderConfig = {
       startTime: config.startTime,
@@ -214,12 +223,12 @@ await saveProgressData(newProgress);
     }
     // Se acabou de bater a meta EXATAMENTE agora (cruzou a linha de chegada)
     else if (progress.consumedMl < config.dailyGoalMl && newProgress.consumedMl >= config.dailyGoalMl) {
+      Logger.goalReached(newTotal, config.dailyGoalMl);
       Alert.alert("🎉 Meta Batida!", "Você atingiu 100% da sua hidratação hoje!");
     }
     // Se JÁ TINHA batido a meta e continua bebendo (Modo Infinito)
     else if (newProgress.consumedMl > config.dailyGoalMl) {
-      // Opcional: Não faz nada (silencioso) ou dá um toast simples.
-      // Vamos deixar sem Alert para não ser chato, o usuário vê o número subir.
+      // Modo infinito - silencioso
     }
     else {
       scheduleHydrationReminders(reminderConfig);
@@ -229,33 +238,46 @@ await saveProgressData(newProgress);
   // --- DESFAZER (UNDO) ---
   const undoLastDrink = async () => {
     if (progress.drinks.length === 0) return;
-    
+
     const lastDrink = progress.drinks[progress.drinks.length - 1];
     const newDrinks = progress.drinks.slice(0, -1);
-    
-    // Se zerou os drinks do dia, volta o streak (se possível)
+    const newTotal = Math.max(0, progress.consumedMl - lastDrink.amount);
+
+    // Se zerou os drinks do dia, volta o streak
     let newStreak = progress.streak;
-    if (newDrinks.length === 0) {
-       newStreak = Math.max(0, progress.streak - 1);
+    if (newDrinks.length === 0 && progress.streak > 0) {
+      const oldStreak = progress.streak;
+      newStreak = oldStreak - 1;
+      Logger.streakUpdated(oldStreak, newStreak, 'undo_empty_day');
     }
 
     const newProgress = {
       ...progress,
-      consumedMl: Math.max(0, progress.consumedMl - lastDrink.amount),
+      consumedMl: newTotal,
       drinks: newDrinks,
-      streak: newStreak
+      streak: newStreak,
     };
 
     await saveProgressData(newProgress);
+    Logger.undo(lastDrink.amount, newTotal);
   };
 
   // --- ZERAR O DIA (RESET) ---
   const resetDay = async () => {
     const doReset = async () => {
-      // Se zerar, perde o streak do dia
-      const newStreak = progress.drinks.length > 0 ? Math.max(0, progress.streak - 1) : progress.streak;
+      const previousTotal = progress.consumedMl;
+
+      // Se zerar e tinha drinks, perde o streak do dia
+      let newStreak = progress.streak;
+      if (progress.drinks.length > 0 && progress.streak > 0) {
+        const oldStreak = progress.streak;
+        newStreak = oldStreak - 1;
+        Logger.streakUpdated(oldStreak, newStreak, 'day_reset');
+      }
+
       const newProgress = { ...progress, consumedMl: 0, drinks: [], streak: newStreak };
       await saveProgressData(newProgress);
+      Logger.reset(previousTotal);
     };
 
     // Na web, usar window.confirm pois Alert.alert não funciona corretamente
