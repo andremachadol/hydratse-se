@@ -25,3 +25,9 @@ export const FALLBACK_DRINK_AMOUNT = 250;
 
 // Calculado: meta padrão
 export const DEFAULT_DAILY_GOAL = DEFAULT_WEIGHT * ML_PER_KG;
+
+export const DEFAULT_NOTIFICATIONS_ENABLED = true;
+
+export const DEFAULT_MODE = 'auto' as const;
+export const DEFAULT_MANUAL_CUP_SIZE = 500; // Garrafinha padrão
+export const DEFAULT_MANUAL_GOAL = 3000;    // Meta manual padrão

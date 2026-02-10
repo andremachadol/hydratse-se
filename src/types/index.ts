@@ -1,19 +1,22 @@
 // src/types/index.ts
 
+export type CalculationMode = 'auto' | 'manual';
+
 export interface Drink {
-  id: string; // UUID único
+  id: string;
   amount: number;
-  timestamp: string; // ISO string format
+  timestamp: string;
 }
 
-// A Configuração agora reflete a Rotina do usuário
 export interface UserConfig {
-  weight: number;        // Peso em Kg (base do cálculo)
-  startTime: string;     // Hora de acordar "08:00"
-  endTime: string;       // Hora de dormir "22:00"
-  intervalMinutes: number; // 30 ou 60 minutos
-  // O dailyGoal ainda existe, mas é calculado baseado no peso
-  dailyGoalMl: number; 
+  weight: number;
+  startTime: string;
+  endTime: string;
+  intervalMinutes: number;
+  dailyGoalMl: number;
+  notificationsEnabled: boolean;
+  mode: CalculationMode;
+  manualCupSize: number;
 }
 
 export interface DayProgress {
@@ -26,7 +29,7 @@ export interface DayProgress {
 export interface WaterTrackerReturn {
   config: UserConfig;
   progress: DayProgress;
-  nextDrinkAmount: number; // <--- O novo valor dinâmico
+  nextDrinkAmount: number;
   isLoading: boolean;
   saveConfig: (newConfig: UserConfig) => Promise<void>;
   addDrink: () => Promise<void>;
