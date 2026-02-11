@@ -1,6 +1,6 @@
 // src/screens/HomeScreen.tsx
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import ProgressRing from '../components/ProgressRing';
@@ -25,36 +25,47 @@ export default function HomeScreen() {
       : 0;
   }, [progress.consumedMl, config.dailyGoalMl]);
 
-  // TELA PRINCIPAL
+  if (isLoading) {
+    return (
+      <LinearGradient colors={COLORS.backgroundGradient} style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </LinearGradient>
+    );
+  }
+
   return (
-    <LinearGradient 
-      colors={COLORS.backgroundGradient} 
+    <LinearGradient
+      colors={COLORS.backgroundGradient}
       style={styles.container}
     >
-      <StatusBar style="dark" /> 
-      
+      <StatusBar style="dark" />
+
       <View style={styles.headerContainer}>
-        <View style={styles.streakContainer}>
+        <View style={styles.streakContainer} accessibilityLabel={`Sequência de ${progress.streak} dias`}>
            <Text style={styles.streakIcon}>🔥</Text>
            <Text style={styles.streakText}>{progress.streak}</Text>
         </View>
-        <Text style={styles.appName}>Hydrate-Se 💧</Text>
-        <TouchableOpacity 
-          style={styles.settingsButton} 
+        <Text style={styles.appName} accessibilityRole="header">Hydrate-Se 💧</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
           onPress={() => setModalVisible(true)}
+          accessibilityLabel="Abrir configurações"
+          accessibilityRole="button"
         >
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.contentContainer}>
-        <View style={{ marginTop: ESPACO_TOPO_ANEL }}>
+        <View style={{ marginTop: ESPACO_TOPO_ANEL }} accessibilityLabel={`Progresso: ${percentage}%, ${progress.consumedMl} de ${config.dailyGoalMl} mililitros`}>
           <ProgressRing consumed={progress.consumedMl} goal={config.dailyGoalMl} percentage={percentage} />
         </View>
 
-        <TouchableOpacity 
-          onPress={() => setModalVisible(true)} 
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
           style={[styles.metaContainer, { marginTop: ESPACO_ANEL_META }]}
+          accessibilityLabel={`Meta do dia: ${config.dailyGoalMl} mililitros. Toque para configurar`}
+          accessibilityRole="button"
         >
           <Text style={styles.metaText}>Meta do Dia: {config.dailyGoalMl}ml</Text>
           <Text style={styles.hintText}>Toque para configurar</Text>
@@ -86,9 +97,14 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    alignItems: 'center', 
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
     paddingTop: 60,
     backgroundColor: '#FFF',
   },

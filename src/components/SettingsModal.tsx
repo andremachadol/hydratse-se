@@ -171,8 +171,8 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
             <View style={styles.switchContainer}>
               <Text style={styles.label}>Lembretes de Hidratação</Text>
               <Switch
-                trackColor={{ false: "#767577", true: COLORS.primaryLight }}
-                thumbColor={notificationsEnabled ? COLORS.primary : "#f4f3f4"}
+                trackColor={{ false: COLORS.switchTrackOff, true: COLORS.primaryLight }}
+                thumbColor={notificationsEnabled ? COLORS.primary : COLORS.switchThumbOff}
                 onValueChange={setNotificationsEnabled}
                 value={notificationsEnabled}
               />

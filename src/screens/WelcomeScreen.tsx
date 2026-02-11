@@ -75,7 +75,10 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
       manualCupSize: finalCup,
     };
 
-    await Storage.saveConfig(newConfig);
+    const saved = await Storage.saveConfig(newConfig);
+    if (!saved) {
+      return Alert.alert("Erro", "Não foi possível salvar suas configurações. Tente novamente.");
+    }
     onFinish();
   };
 

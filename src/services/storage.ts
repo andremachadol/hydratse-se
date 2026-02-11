@@ -28,7 +28,10 @@ const isValidConfig = (data: unknown): data is Partial<UserConfig> => {
     (d.startTime === undefined || typeof d.startTime === 'string') &&
     (d.endTime === undefined || typeof d.endTime === 'string') &&
     (d.intervalMinutes === undefined || typeof d.intervalMinutes === 'number') &&
-    (d.dailyGoalMl === undefined || typeof d.dailyGoalMl === 'number')
+    (d.dailyGoalMl === undefined || typeof d.dailyGoalMl === 'number') &&
+    (d.notificationsEnabled === undefined || typeof d.notificationsEnabled === 'boolean') &&
+    (d.mode === undefined || d.mode === 'auto' || d.mode === 'manual') &&
+    (d.manualCupSize === undefined || typeof d.manualCupSize === 'number')
   );
 };
 

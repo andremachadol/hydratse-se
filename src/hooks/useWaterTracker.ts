@@ -148,28 +148,33 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     await scheduleHydrationReminders(reminderConfig);
   }, []);
 
-  // --- SALVAR CONFIG ---
   const saveConfigData = async (newConfig: UserConfig) => {
+    const previousConfig = config;
     let updatedConfig = { ...newConfig };
 
-    // Lógica Híbrida de Meta:
-    // Se AUTO: Recalcula meta baseada no peso.
-    // Se MANUAL: Mantém a meta que veio do modal (input do usuário).
     if (newConfig.mode === 'auto') {
         updatedConfig.dailyGoalMl = newConfig.weight * ML_PER_KG;
     }
 
     setConfig(updatedConfig);
-    await Storage.saveConfig(updatedConfig);
+    const saved = await Storage.saveConfig(updatedConfig);
+    if (!saved) {
+      setConfig(previousConfig);
+      Alert.alert("Erro", "Não foi possível salvar as configurações.");
+      return;
+    }
     Logger.configSaved(updatedConfig.weight, updatedConfig.dailyGoalMl);
-    
-    // Atualiza notificações (se desligou ou mudou horário)
     handleNotifications(progress.consumedMl, updatedConfig);
   };
 
   const saveProgressData = async (newProgress: DayProgress) => {
+    const previousProgress = progress;
     setProgress(newProgress);
-    await Storage.saveProgress(newProgress);
+    const saved = await Storage.saveProgress(newProgress);
+    if (!saved) {
+      setProgress(previousProgress);
+      console.error('Falha ao persistir progresso, estado revertido');
+    }
   };
 
   // --- BEBER ÁGUA ---
@@ -190,10 +195,14 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     let newStreak = progress.streak;
 
     if (isFirstDrinkOfDay) {
-      const continuedStreak = progress.lastDrinkDate === yesterday || progress.lastDrinkDate === today;
       const oldStreak = progress.streak;
-      newStreak = continuedStreak ? oldStreak + 1 : 1;
-      Logger.streakUpdated(oldStreak, newStreak, continuedStreak ? 'continued' : 'reset');
+      if (progress.lastDrinkDate === yesterday) {
+        newStreak = oldStreak + 1;
+        Logger.streakUpdated(oldStreak, newStreak, 'continued');
+      } else {
+        newStreak = 1;
+        Logger.streakUpdated(oldStreak, newStreak, 'reset');
+      }
     }
 
     const newTotal = isNewDay ? amountToDrink : progress.consumedMl + amountToDrink;

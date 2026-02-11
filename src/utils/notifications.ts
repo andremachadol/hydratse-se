@@ -3,10 +3,8 @@ import * as Notifications from 'expo-notifications';
 import { timeToMinutes } from './time';
 import { UserConfig } from '../types';
 
-// Usa apenas os campos necessários de UserConfig
 type ReminderConfig = Pick<UserConfig, 'startTime' | 'endTime' | 'intervalMinutes'>;
 
-// Configura como o celular reage quando chega notificação com o app aberto
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -17,7 +15,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Solicita permissão para enviar notificações
 export const requestNotificationPermission = async (): Promise<boolean> => {
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -36,32 +33,45 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   }
 };
 
-// Função para agendar os lembretes baseado na config do usuário
+/**
+ * Agenda lembretes de hidratação usando DATE triggers com horários fixos reais.
+ * Calcula os próximos horários baseado no intervalo e agenda apenas os que
+ * ainda não passaram no dia de hoje.
+ */
 export const scheduleHydrationReminders = async (config?: ReminderConfig): Promise<boolean> => {
   try {
-    // Verifica permissão antes de agendar
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) {
       console.warn('Permissão de notificação não concedida');
       return false;
     }
 
-    // Cancela os anteriores para não duplicar
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    // Se não tiver config, usa valores padrão
     const startTime = config?.startTime || '08:00';
     const endTime = config?.endTime || '22:00';
     const intervalMinutes = config?.intervalMinutes || 60;
 
-    // Calcula quantos lembretes baseado na jornada
     const startMins = timeToMinutes(startTime);
     const endMins = timeToMinutes(endTime);
-    const totalDayMinutes = endMins - startMins;
-    const reminderCount = Math.max(1, Math.floor(totalDayMinutes / intervalMinutes));
 
-    // Agenda lembretes baseado no intervalo do usuário
-    for (let i = 1; i <= reminderCount; i++) {
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+
+    // Gera todos os horários do dia (ex: 08:00, 09:00, ..., 22:00)
+    const scheduleTimes: number[] = [];
+    for (let mins = startMins + intervalMinutes; mins <= endMins; mins += intervalMinutes) {
+      scheduleTimes.push(mins);
+    }
+
+    // Agenda apenas os horários que ainda não passaram
+    let scheduled = 0;
+    for (const targetMins of scheduleTimes) {
+      if (targetMins <= nowMins) continue;
+
+      const triggerDate = new Date();
+      triggerDate.setHours(Math.floor(targetMins / 60), targetMins % 60, 0, 0);
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Hora da água! 💧',
@@ -69,13 +79,14 @@ export const scheduleHydrationReminders = async (config?: ReminderConfig): Promi
           sound: true,
         },
         trigger: {
-          seconds: i * intervalMinutes * 60,
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          date: triggerDate,
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
         },
       });
+      scheduled++;
     }
 
-    return true;
+    return scheduled > 0;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error('Erro ao agendar notificações:', message);

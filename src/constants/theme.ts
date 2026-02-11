@@ -23,6 +23,10 @@ export const COLORS = {
   surfaceLight: '#F0F0F0',
   surfaceDanger: '#FFF0F0',
   surfaceCard: 'rgba(255, 255, 255, 0.9)',
+
+  // Cores de switch/toggle
+  switchTrackOff: '#767577',
+  switchThumbOff: '#f4f3f4',
 };
 
 // Estilos de sombra reutilizáveis
