@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "hidrate-final",
-    "slug": "hidratese",
-    "version": "1.0.0",
+    "name": "Hydratese",
+    "slug": "hydrate-se",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F0F9FF"
     },
     "ios": {
       "supportsTablet": true
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F0F9FF"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.andremachadolsorganization.hidratese"
