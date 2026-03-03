@@ -5,6 +5,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import SplashAnimation from './src/components/SplashAnimation';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import * as Storage from './src/services/storage';
+import { hasCompleteUserConfig } from './src/utils/configValidation';
 
 export default function App() {
   // Estado 1: Splash terminou a animação visual?
@@ -20,7 +21,7 @@ export default function App() {
   const checkConfig = async () => {
     try {
       const config = await Storage.loadConfig();
-      setHasConfig(!!config);
+      setHasConfig(hasCompleteUserConfig(config));
     } catch (e) {
       console.error(e);
       setHasConfig(false); // Na dúvida, joga pro Welcome

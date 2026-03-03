@@ -82,7 +82,7 @@ tests/
 ### Requisitos
 - Node.js 18+
 - npm
-- Expo Go (mobile) ou emulador
+- Emulador Android/iOS (Android Studio/Xcode) ou dispositivo fisico
 
 ### Instalar
 ```bash
@@ -99,6 +99,8 @@ Scripts disponiveis:
 - `npm run android`
 - `npm run ios`
 - `npm run web`
+- `npm run typecheck`
+- `npm run check`
 
 ## Testes
 Este projeto usa o test runner nativo do Node com TypeScript via `--experimental-strip-types`.
@@ -110,6 +112,15 @@ npm run test
 Modo watch:
 ```bash
 npm run test:watch
+```
+
+## Qualidade
+```bash
+# Tipagem
+npm run typecheck
+
+# Checagem completa (tipagem + testes)
+npm run check
 ```
 
 ## Build

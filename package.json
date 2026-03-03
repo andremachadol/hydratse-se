@@ -1,12 +1,15 @@
 {
   "name": "hidrate-final",
   "version": "2.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test",
     "test": "node --experimental-strip-types --test --test-isolation=none \"tests/**/*.test.ts\"",
     "test:watch": "node --experimental-strip-types --test --test-isolation=none --watch \"tests/**/*.test.ts\"",
     "release:patch": "node scripts/release.js patch",
