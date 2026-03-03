@@ -24,11 +24,14 @@ export interface DayProgress {
   drinks: Drink[];
   streak: number;
   lastDrinkDate: string;
+  goalOverrideMl?: number;
+  goalOverrideDate?: string;
 }
 
 export interface WaterTrackerReturn {
   config: UserConfig;
   progress: DayProgress;
+  todayGoalMl: number;
   nextDrinkAmount: number;
   isLoading: boolean;
   saveConfig: (newConfig: UserConfig) => Promise<void>;

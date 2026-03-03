@@ -11,6 +11,8 @@ const sampleProgress: DayProgress = {
   ],
   streak: 4,
   lastDrinkDate: '2026-03-02',
+  goalOverrideMl: 1500,
+  goalOverrideDate: '2026-03-02',
 };
 
 test('normalizeProgressForToday mantem dados quando ja e hoje', () => {
@@ -25,6 +27,23 @@ test('normalizeProgressForToday zera consumo e drinks quando dia mudou', () => {
   assert.deepEqual(normalized.drinks, []);
   assert.equal(normalized.streak, 4);
   assert.equal(normalized.lastDrinkDate, '2026-03-02');
+  assert.equal(normalized.goalOverrideMl, undefined);
+  assert.equal(normalized.goalOverrideDate, undefined);
+});
+
+test('normalizeProgressForToday mantem override valido de hoje', () => {
+  const lateStartProgress: DayProgress = {
+    consumedMl: 0,
+    drinks: [],
+    streak: 1,
+    lastDrinkDate: '',
+    goalOverrideMl: 1000,
+    goalOverrideDate: '2026-03-03',
+  };
+  const normalized = normalizeProgressForToday(lateStartProgress, '2026-03-03');
+
+  assert.equal(normalized.goalOverrideMl, 1000);
+  assert.equal(normalized.goalOverrideDate, '2026-03-03');
 });
 
 test('calculateNextStreak incrementa quando ultimo registro e ontem', () => {

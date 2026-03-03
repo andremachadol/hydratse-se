@@ -16,14 +16,14 @@ const ESPACO_META_DICA = 30;
 const ESPACO_DICA_BOTAO = 30;
 
 export default function HomeScreen() {
-  const { config, progress, nextDrinkAmount, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } = useWaterTracker();
+  const { config, progress, todayGoalMl, nextDrinkAmount, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } = useWaterTracker();
   const [modalVisible, setModalVisible] = useState(false);
 
   const percentage = useMemo(() => {
-    return config.dailyGoalMl > 0 
-      ? Math.round((progress.consumedMl / config.dailyGoalMl) * 100)
+    return todayGoalMl > 0 
+      ? Math.round((progress.consumedMl / todayGoalMl) * 100)
       : 0;
-  }, [progress.consumedMl, config.dailyGoalMl]);
+  }, [progress.consumedMl, todayGoalMl]);
 
   if (isLoading) {
     return (
@@ -57,17 +57,17 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.contentContainer}>
-        <View style={{ marginTop: ESPACO_TOPO_ANEL }} accessibilityLabel={`Progresso: ${percentage}%, ${progress.consumedMl} de ${config.dailyGoalMl} mililitros`}>
-          <ProgressRing consumed={progress.consumedMl} goal={config.dailyGoalMl} percentage={percentage} />
+        <View style={{ marginTop: ESPACO_TOPO_ANEL }} accessibilityLabel={`Progresso: ${percentage}%, ${progress.consumedMl} de ${todayGoalMl} mililitros`}>
+          <ProgressRing consumed={progress.consumedMl} goal={todayGoalMl} percentage={percentage} />
         </View>
 
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
           style={[styles.metaContainer, { marginTop: ESPACO_ANEL_META }]}
-          accessibilityLabel={`Meta do dia: ${config.dailyGoalMl} mililitros. Toque para configurar`}
+          accessibilityLabel={`Meta do dia: ${todayGoalMl} mililitros. Toque para configurar`}
           accessibilityRole="button"
         >
-          <Text style={styles.metaText}>Meta do Dia: {config.dailyGoalMl}ml</Text>
+          <Text style={styles.metaText}>Meta do Dia: {todayGoalMl}ml</Text>
           <Text style={styles.hintText}>Toque para configurar</Text>
         </TouchableOpacity>
 

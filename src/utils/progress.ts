@@ -4,12 +4,17 @@ export const normalizeProgressForToday = (
   progress: DayProgress,
   today: string
 ): DayProgress => {
-  if (progress.lastDrinkDate === today) return progress;
+  const shouldResetDay = progress.lastDrinkDate !== today;
+  const shouldClearOverride = !!progress.goalOverrideDate && progress.goalOverrideDate !== today;
+
+  if (!shouldResetDay && !shouldClearOverride) return progress;
 
   return {
     ...progress,
-    consumedMl: 0,
-    drinks: [],
+    consumedMl: shouldResetDay ? 0 : progress.consumedMl,
+    drinks: shouldResetDay ? [] : progress.drinks,
+    goalOverrideMl: shouldClearOverride ? undefined : progress.goalOverrideMl,
+    goalOverrideDate: shouldClearOverride ? undefined : progress.goalOverrideDate,
   };
 };
 

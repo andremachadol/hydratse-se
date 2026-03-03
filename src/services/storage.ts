@@ -16,7 +16,9 @@ const isValidProgress = (data: unknown): data is DayProgress => {
     typeof d.consumedMl === 'number' &&
     Array.isArray(d.drinks) &&
     typeof d.streak === 'number' &&
-    typeof d.lastDrinkDate === 'string'
+    typeof d.lastDrinkDate === 'string' &&
+    (d.goalOverrideMl === undefined || typeof d.goalOverrideMl === 'number') &&
+    (d.goalOverrideDate === undefined || typeof d.goalOverrideDate === 'string')
   );
 };
 

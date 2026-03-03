@@ -14,7 +14,7 @@ export const timeToMinutes = (time: string): number => {
  * Formata data local como YYYY-MM-DD sem conversão para UTC.
  * Usa getFullYear/getMonth/getDate para respeitar o fuso do dispositivo.
  */
-const formatLocalDate = (date: Date): string => {
+export const formatLocalDate = (date: Date): string => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
@@ -34,5 +34,14 @@ export const getTodayDate = (): string => {
 export const getYesterdayDate = (): string => {
   const date = new Date();
   date.setDate(date.getDate() - 1);
+  return formatLocalDate(date);
+};
+
+/**
+ * Retorna data local com deslocamento em dias (0 = hoje, 1 = amanhÃ£)
+ */
+export const getDateWithOffset = (offsetDays: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
   return formatLocalDate(date);
 };

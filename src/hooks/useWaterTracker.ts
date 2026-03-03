@@ -1,10 +1,15 @@
 // src/hooks/useWaterTracker.ts
 import { useState, useEffect, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import { scheduleHydrationReminders, requestNotificationPermission } from '../utils/notifications';
+import {
+  scheduleHydrationReminders,
+  requestNotificationPermission,
+  cancelHydrationRemindersForToday,
+  cancelAllHydrationReminders,
+} from '../utils/notifications';
 import { timeToMinutes, getTodayDate, getYesterdayDate } from '../utils/time';
 import { normalizeProgressForToday, calculateNextStreak } from '../utils/progress';
+import { resolveEffectiveDailyGoal } from '../utils/dailyGoal';
 import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types';
 import * as Storage from '../services/storage';
 import { Logger } from '../services/logger';
@@ -37,6 +42,10 @@ const DEFAULT_CONFIG: UserConfig = {
   notificationsEnabled: DEFAULT_NOTIFICATIONS_ENABLED,
   mode: DEFAULT_MODE,                   // 'auto' ou 'manual'
   manualCupSize: DEFAULT_MANUAL_CUP_SIZE, // Ex: 500ml
+};
+
+const getEffectiveGoal = (cfg: UserConfig, p: DayProgress, today: string = getTodayDate()): number => {
+  return resolveEffectiveDailyGoal(cfg.dailyGoalMl, p, today);
 };
 
 export const useWaterTracker = (): WaterTrackerReturn => {
@@ -95,7 +104,8 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       }
 
       await requestNotificationPermission();
-      await handleNotifications(currentProgress.consumedMl, currentConfig);
+      const todayGoalMl = getEffectiveGoal(currentConfig, currentProgress);
+      await handleNotifications(currentProgress.consumedMl, currentConfig, todayGoalMl);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -105,7 +115,8 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
   // --- LÓGICA DE CÁLCULO DO COPO (AUTO vs MANUAL) ---
   const recalculateNextDrink = useCallback(() => {
-    const remainingMl = Math.max(0, config.dailyGoalMl - progress.consumedMl);
+    const activeGoalMl = getEffectiveGoal(config, progress);
+    const remainingMl = Math.max(0, activeGoalMl - progress.consumedMl);
     let finalAmount = 0;
 
     // ⚙️ MODO MANUAL: Respeita o tamanho da garrafa do usuário
@@ -113,7 +124,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
         const cupSize = config.manualCupSize || 500;
         
         // Se já bateu a meta (Modo Infinito) -> Sugere garrafa cheia
-        if (progress.consumedMl >= config.dailyGoalMl) {
+        if (progress.consumedMl >= activeGoalMl) {
             finalAmount = cupSize;
         } 
         // Se falta pouquinho (menos que uma garrafa) -> Sugere o resto exato
@@ -133,10 +144,10 @@ export const useWaterTracker = (): WaterTrackerReturn => {
         const totalSlots = Math.floor(totalDayMinutes / config.intervalMinutes) + 1;
         const safeSlots = Math.max(1, totalSlots);
         
-        const standardCupSize = config.dailyGoalMl / safeSlots;
+        const standardCupSize = activeGoalMl / safeSlots;
         const roundedStandardCup = Math.ceil(standardCupSize / ROUNDING_STEP) * ROUNDING_STEP;
 
-        if (progress.consumedMl >= config.dailyGoalMl) {
+        if (progress.consumedMl >= activeGoalMl) {
             finalAmount = roundedStandardCup;
         } else if (remainingMl < standardCupSize) {
             finalAmount = remainingMl;
@@ -148,19 +159,23 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     setNextDrinkAmount(finalAmount);
   }, [config, progress.consumedMl]);
 
-  const handleNotifications = useCallback(async (currentProgressMl: number, currentConfig: UserConfig) => {
+  const handleNotifications = useCallback(async (
+    currentProgressMl: number,
+    currentConfig: UserConfig,
+    currentGoalMl: number
+  ) => {
     try {
       // 1. Se desligado globalmente: CANCELA
       if (!currentConfig.notificationsEnabled) {
         Logger.info("NOTIFICATIONS_DISABLED_BY_USER");
-        await Notifications.cancelAllScheduledNotificationsAsync();
+        await cancelAllHydrationReminders();
         return;
       }
 
       // 2. Se meta batida: CANCELA (Silêncio merecido)
-      if (currentProgressMl >= currentConfig.dailyGoalMl) {
+      if (currentProgressMl >= currentGoalMl) {
         Logger.info("GOAL_REACHED_SILENCING_NOTIFICATIONS");
-        await Notifications.cancelAllScheduledNotificationsAsync();
+        await cancelHydrationRemindersForToday();
         return;
       }
 
@@ -193,7 +208,8 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       return;
     }
     Logger.configSaved(updatedConfig.weight, updatedConfig.dailyGoalMl);
-    await handleNotifications(progress.consumedMl, updatedConfig);
+    const todayGoalMl = getEffectiveGoal(updatedConfig, progress);
+    await handleNotifications(progress.consumedMl, updatedConfig, todayGoalMl);
   };
 
   const saveProgressData = async (newProgress: DayProgress) => {
@@ -210,6 +226,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   const addDrink = async () => {
     const today = getTodayDate();
     const yesterday = getYesterdayDate();
+    const activeGoalMl = getEffectiveGoal(config, progress, today);
     const amountToDrink = nextDrinkAmount > 0 ? nextDrinkAmount : FALLBACK_DRINK_AMOUNT;
     
     const newDrink: Drink = {
@@ -235,6 +252,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
     const newTotal = isNewDay ? amountToDrink : progress.consumedMl + amountToDrink;
     const newProgress: DayProgress = {
+      ...progress,
       consumedMl: newTotal,
       drinks: isNewDay ? [newDrink] : [...progress.drinks, newDrink],
       streak: newStreak,
@@ -242,16 +260,16 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     };
 
     await saveProgressData(newProgress);
-    Logger.drink(amountToDrink, newTotal, config.dailyGoalMl);
+    Logger.drink(amountToDrink, newTotal, activeGoalMl);
 
     // Feedback Visual: Meta Batida
-    if (progress.consumedMl < config.dailyGoalMl && newProgress.consumedMl >= config.dailyGoalMl) {
-      Logger.goalReached(newTotal, config.dailyGoalMl);
+    if (progress.consumedMl < activeGoalMl && newProgress.consumedMl >= activeGoalMl) {
+      Logger.goalReached(newTotal, activeGoalMl);
       Alert.alert("🎉 Meta Batida!", "Você atingiu 100% da sua hidratação hoje!");
     }
 
     // Feedback Sonoro/Notificação: Atualiza status
-    await handleNotifications(newTotal, config);
+    await handleNotifications(newTotal, config, activeGoalMl);
   };
 
   // --- DESFAZER ---
@@ -278,7 +296,8 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     Logger.undo(lastDrink.amount, newTotal);
     
     // Ao desfazer, verifica se precisa voltar a notificar
-    await handleNotifications(newTotal, config);
+    const todayGoalMl = getEffectiveGoal(config, newProgress);
+    await handleNotifications(newTotal, config, todayGoalMl);
   };
 
   // --- ZERAR DIA ---
@@ -295,7 +314,8 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       Logger.reset(previousTotal);
       
       // Ao zerar, volta a notificar (se estiver ativado)
-      await handleNotifications(0, config);
+      const todayGoalMl = getEffectiveGoal(config, newProgress);
+      await handleNotifications(0, config, todayGoalMl);
     };
 
     if (Platform.OS === 'web') {
@@ -313,5 +333,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     }
   };
 
-  return { config, progress, nextDrinkAmount, isLoading, saveConfig: saveConfigData, addDrink, undoLastDrink, resetDay };
+  const todayGoalMl = getEffectiveGoal(config, progress);
+
+  return { config, progress, todayGoalMl, nextDrinkAmount, isLoading, saveConfig: saveConfigData, addDrink, undoLastDrink, resetDay };
 };

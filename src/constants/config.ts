@@ -17,6 +17,9 @@ export const DEFAULT_END_TIME = '22:00';
 // Intervalo de lembretes (minutos)
 export const DEFAULT_INTERVAL_MINUTES = 60;
 
+// Limite conservador para ajuste de meta no fim da janela
+export const SAFE_MAX_ML_PER_HOUR = 500;
+
 // Arredondamento do copo (ml)
 export const ROUNDING_STEP = 10;
 
