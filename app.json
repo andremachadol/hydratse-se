@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Hydratese",
-    "slug": "hydrate-se",
+    "name": "Hidrate-se",
+    "slug": "hidratese",
     "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,8 +16,9 @@
       "supportsTablet": true
     },
     "android": {
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#F0F9FF"
       },
       "edgeToEdgeEnabled": true,
