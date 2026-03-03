@@ -8,7 +8,7 @@ import { timeToMinutes } from '../utils/time';
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (newConfig: UserConfig) => void;
+  onSave: (newConfig: UserConfig) => Promise<void>;
   currentConfig: UserConfig;
 }
 
@@ -43,15 +43,23 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
   const formatNumber = (text: string) => text.replace(/\D/g, ''); // Só números inteiros para ml
   
   const handleWeightChange = (text: string) => {
-     // (Mantém lógica de peso com vírgula do código anterior...)
-     const digits = text.replace(/\D/g, '');
-     const limited = digits.slice(0, 5);
-     if (limited === '') { setWeight(''); return; }
-     const numValue = parseInt(limited, 10) / 100;
-     setWeight(numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const normalized = text.replace('.', ',');
+    const cleaned = normalized.replace(/[^0-9,]/g, '');
+    const [rawInt = '', rawDecimal = ''] = cleaned.split(',');
+
+    const intPart = rawInt.slice(0, 3);
+    const decimalPart = rawDecimal.slice(0, 2);
+    const hasComma = cleaned.includes(',');
+
+    if (!intPart && !hasComma) {
+      setWeight('');
+      return;
+    }
+
+    setWeight(hasComma ? `${intPart},${decimalPart}` : intPart);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validação de horários
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
@@ -97,8 +105,12 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
         newConfig.manualCupSize = cup;
     }
 
-    onSave(newConfig);
-    onClose();
+    try {
+      await onSave(newConfig);
+      onClose();
+    } catch {
+      Alert.alert("Erro", "Não foi possível atualizar as configurações.");
+    }
   };
 
   return (
@@ -132,7 +144,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
                     <Text style={styles.label}>Seu Peso (kg)</Text>
                     <TextInput
                         style={styles.input}
-                        keyboardType="number-pad"
+                        keyboardType="decimal-pad"
                         value={weight}
                         onChangeText={handleWeightChange}
                         placeholder="Ex: 70,00"
@@ -210,7 +222,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
                 <Text style={styles.textStyle}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.buttonSave]} onPress={handleSave}>
+              <TouchableOpacity style={[styles.button, styles.buttonSave]} onPress={() => { void handleSave(); }}>
                 <Text style={styles.textStyle}>Salvar</Text>
               </TouchableOpacity>
             </View>

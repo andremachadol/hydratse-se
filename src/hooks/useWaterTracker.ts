@@ -4,6 +4,7 @@ import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { scheduleHydrationReminders, requestNotificationPermission } from '../utils/notifications';
 import { timeToMinutes, getTodayDate, getYesterdayDate } from '../utils/time';
+import { normalizeProgressForToday, calculateNextStreak } from '../utils/progress';
 import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types';
 import * as Storage from '../services/storage';
 import { Logger } from '../services/logger';
@@ -63,15 +64,38 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      let currentConfig = DEFAULT_CONFIG;
+      let currentProgress: DayProgress = {
+        consumedMl: 0,
+        drinks: [],
+        streak: 0,
+        lastDrinkDate: '',
+      };
+
       const savedConfig = await Storage.loadConfig();
       if (savedConfig) {
-        setConfig({ ...DEFAULT_CONFIG, ...savedConfig });
+        currentConfig = { ...DEFAULT_CONFIG, ...savedConfig };
+        setConfig(currentConfig);
       }
+
       const savedProgress = await Storage.loadProgress();
       if (savedProgress) {
-        setProgress(savedProgress);
+        const today = getTodayDate();
+        const normalizedProgress = normalizeProgressForToday(savedProgress, today);
+        const wasOutdatedDay = normalizedProgress !== savedProgress;
+
+        if (wasOutdatedDay) {
+          currentProgress = normalizedProgress;
+          setProgress(currentProgress);
+          await Storage.saveProgress(currentProgress);
+        } else {
+          currentProgress = savedProgress;
+          setProgress(savedProgress);
+        }
       }
+
       await requestNotificationPermission();
+      await handleNotifications(currentProgress.consumedMl, currentConfig);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -125,27 +149,32 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   }, [config, progress.consumedMl]);
 
   const handleNotifications = useCallback(async (currentProgressMl: number, currentConfig: UserConfig) => {
-    // 1. Se desligado globalmente: CANCELA
-    if (!currentConfig.notificationsEnabled) {
-      Logger.info("NOTIFICATIONS_DISABLED_BY_USER");
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      return;
-    }
+    try {
+      // 1. Se desligado globalmente: CANCELA
+      if (!currentConfig.notificationsEnabled) {
+        Logger.info("NOTIFICATIONS_DISABLED_BY_USER");
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        return;
+      }
 
-    // 2. Se meta batida: CANCELA (Silêncio merecido)
-    if (currentProgressMl >= currentConfig.dailyGoalMl) {
-      Logger.info("GOAL_REACHED_SILENCING_NOTIFICATIONS");
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      return;
-    }
+      // 2. Se meta batida: CANCELA (Silêncio merecido)
+      if (currentProgressMl >= currentConfig.dailyGoalMl) {
+        Logger.info("GOAL_REACHED_SILENCING_NOTIFICATIONS");
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        return;
+      }
 
-    // 3. Caso contrário: AGENDA/REAGENDA
-    const reminderConfig = {
-      startTime: currentConfig.startTime,
-      endTime: currentConfig.endTime,
-      intervalMinutes: currentConfig.intervalMinutes,
-    };
-    await scheduleHydrationReminders(reminderConfig);
+      // 3. Caso contrário: AGENDA/REAGENDA
+      const reminderConfig = {
+        startTime: currentConfig.startTime,
+        endTime: currentConfig.endTime,
+        intervalMinutes: currentConfig.intervalMinutes,
+      };
+      await scheduleHydrationReminders(reminderConfig);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      Logger.error('NOTIFICATION_UPDATE_FAILED', { message });
+    }
   }, []);
 
   const saveConfigData = async (newConfig: UserConfig) => {
@@ -164,7 +193,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       return;
     }
     Logger.configSaved(updatedConfig.weight, updatedConfig.dailyGoalMl);
-    handleNotifications(progress.consumedMl, updatedConfig);
+    await handleNotifications(progress.consumedMl, updatedConfig);
   };
 
   const saveProgressData = async (newProgress: DayProgress) => {
@@ -191,16 +220,15 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     
     // Streak Logic
     const isNewDay = progress.lastDrinkDate !== today;
-    const isFirstDrinkOfDay = progress.drinks.length === 0;
     let newStreak = progress.streak;
 
-    if (isFirstDrinkOfDay) {
+    if (isNewDay) {
       const oldStreak = progress.streak;
+      newStreak = calculateNextStreak(oldStreak, progress.lastDrinkDate, today, yesterday);
+
       if (progress.lastDrinkDate === yesterday) {
-        newStreak = oldStreak + 1;
         Logger.streakUpdated(oldStreak, newStreak, 'continued');
       } else {
-        newStreak = 1;
         Logger.streakUpdated(oldStreak, newStreak, 'reset');
       }
     }
@@ -223,7 +251,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     }
 
     // Feedback Sonoro/Notificação: Atualiza status
-    handleNotifications(newTotal, config);
+    await handleNotifications(newTotal, config);
   };
 
   // --- DESFAZER ---
@@ -250,7 +278,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     Logger.undo(lastDrink.amount, newTotal);
     
     // Ao desfazer, verifica se precisa voltar a notificar
-    handleNotifications(newTotal, config);
+    await handleNotifications(newTotal, config);
   };
 
   // --- ZERAR DIA ---
@@ -267,7 +295,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       Logger.reset(previousTotal);
       
       // Ao zerar, volta a notificar (se estiver ativado)
-      handleNotifications(0, config);
+      await handleNotifications(0, config);
     };
 
     if (Platform.OS === 'web') {

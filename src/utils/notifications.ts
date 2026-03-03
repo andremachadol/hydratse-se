@@ -1,6 +1,7 @@
 // src/utils/notifications.ts
 import * as Notifications from 'expo-notifications';
 import { timeToMinutes } from './time';
+import { buildReminderSlots } from './reminderSlots';
 import { UserConfig } from '../types';
 
 type ReminderConfig = Pick<UserConfig, 'startTime' | 'endTime' | 'intervalMinutes'>;
@@ -34,9 +35,9 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 
 /**
- * Agenda lembretes de hidratação usando DATE triggers com horários fixos reais.
- * Calcula os próximos horários baseado no intervalo e agenda apenas os que
- * ainda não passaram no dia de hoje.
+ * Agenda lembretes de hidratação com recorrência diária.
+ * Cada horário gerado vira um trigger diário fixo (hora/minuto),
+ * funcionando mesmo sem reabrir o app no dia seguinte.
  */
 export const scheduleHydrationReminders = async (config?: ReminderConfig): Promise<boolean> => {
   try {
@@ -55,22 +56,17 @@ export const scheduleHydrationReminders = async (config?: ReminderConfig): Promi
     const startMins = timeToMinutes(startTime);
     const endMins = timeToMinutes(endTime);
 
-    const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes();
-
-    // Gera todos os horários do dia (ex: 08:00, 09:00, ..., 22:00)
-    const scheduleTimes: number[] = [];
-    for (let mins = startMins + intervalMinutes; mins <= endMins; mins += intervalMinutes) {
-      scheduleTimes.push(mins);
+    const scheduleTimes = buildReminderSlots(startMins, endMins, intervalMinutes);
+    if (scheduleTimes.length === 0) {
+      console.warn('Configuração de lembretes inválida para agendamento');
+      return false;
     }
 
-    // Agenda apenas os horários que ainda não passaram
+    // Agenda todos os horários como recorrência diária
     let scheduled = 0;
     for (const targetMins of scheduleTimes) {
-      if (targetMins <= nowMins) continue;
-
-      const triggerDate = new Date();
-      triggerDate.setHours(Math.floor(targetMins / 60), targetMins % 60, 0, 0);
+      const hour = Math.floor(targetMins / 60);
+      const minute = targetMins % 60;
 
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -79,8 +75,9 @@ export const scheduleHydrationReminders = async (config?: ReminderConfig): Promi
           sound: true,
         },
         trigger: {
-          date: triggerDate,
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
         },
       });
       scheduled++;
