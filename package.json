@@ -1,6 +1,6 @@
 {
   "name": "hidrate-final",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -8,7 +8,10 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "node --experimental-strip-types --test --test-isolation=none \"tests/**/*.test.ts\"",
-    "test:watch": "node --experimental-strip-types --test --test-isolation=none --watch \"tests/**/*.test.ts\""
+    "test:watch": "node --experimental-strip-types --test --test-isolation=none --watch \"tests/**/*.test.ts\"",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

@@ -121,5 +121,14 @@ eas build --platform android --profile preview
 eas build --platform android --profile production
 ```
 
+## Versionamento e releases
+- Fluxo baseado em commits e tags semanticas (`vMAJOR.MINOR.PATCH`)
+- Scripts:
+  - `npm run release:patch`
+  - `npm run release:minor`
+  - `npm run release:major`
+- Guia completo:
+  - `RELEASES.md`
+
 ## Licenca
 MIT
