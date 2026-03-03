@@ -13,19 +13,19 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '../constants/theme';
-import { CalculationMode, DayProgress, UserConfig } from '../types';
+import WelcomeModeCard from '../components/WelcomeModeCard';
+import { CalculationMode, UserConfig } from '../types';
 import {
-  ML_PER_KG,
   DEFAULT_START_TIME,
   DEFAULT_END_TIME,
   DEFAULT_INTERVAL_MINUTES,
   DEFAULT_NOTIFICATIONS_ENABLED,
   SAFE_MAX_ML_PER_HOUR,
-  MIN_WEIGHT,
-  MAX_WEIGHT,
+  ML_PER_KG,
 } from '../constants/config';
 import { calculateSafeGoalForRemainingWindow, isLateStartToday } from '../utils/dailyGoal';
 import { getTodayDate, timeToMinutes } from '../utils/time';
+import { buildInitialProgress, resolveOnboardingInputs } from '../utils/onboarding';
 import * as Storage from '../services/storage';
 
 interface WelcomeScreenProps {
@@ -63,27 +63,11 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
 
   const handleStart = async () => {
     Keyboard.dismiss();
-    let finalWeight = 0;
-    let finalGoal = 0;
-    let finalCup = 500;
-
-    if (mode === 'auto') {
-      finalWeight = parseFloat(weight.replace(',', '.'));
-      if (!finalWeight || finalWeight < MIN_WEIGHT || finalWeight > MAX_WEIGHT) {
-        return Alert.alert('Ops', 'Informe um peso valido (kg).');
-      }
-      finalGoal = finalWeight * ML_PER_KG;
-    } else {
-      const cleanGoal = manualGoal.replace(/[^0-9]/g, '');
-      const cleanCup = manualCup.replace(/[^0-9]/g, '');
-
-      finalGoal = parseInt(cleanGoal, 10);
-      finalCup = parseInt(cleanCup, 10);
-
-      if (!finalGoal || finalGoal < 500) return Alert.alert('Ops', 'Meta minima: 500ml.');
-      if (!finalCup || finalCup < 50) return Alert.alert('Ops', 'Copo invalido.');
-      finalWeight = 70;
+    const resolvedInputs = resolveOnboardingInputs(mode, weight, manualGoal, manualCup, ML_PER_KG);
+    if (!resolvedInputs.ok) {
+      return Alert.alert('Ops', resolvedInputs.errorMessage);
     }
+    const { weight: finalWeight, goalMl: finalGoal, cupMl: finalCup } = resolvedInputs.value;
 
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
@@ -132,14 +116,7 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
       return Alert.alert('Erro', 'Nao foi possivel salvar suas configuracoes. Tente novamente.');
     }
 
-    const initialProgress: DayProgress = {
-      consumedMl: 0,
-      drinks: [],
-      streak: 0,
-      lastDrinkDate: '',
-      goalOverrideMl: todayGoalOverrideMl,
-      goalOverrideDate: todayGoalOverrideMl ? getTodayDate() : undefined,
-    };
+    const initialProgress = buildInitialProgress(todayGoalOverrideMl, getTodayDate());
     const savedProgress = await Storage.saveProgress(initialProgress);
     if (!savedProgress) {
       return Alert.alert('Erro', 'Nao foi possivel preparar o progresso inicial. Tente novamente.');
@@ -156,31 +133,39 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
         <Text style={styles.subtitle}>Como voce prefere planejar sua hidratacao?</Text>
 
         <View style={styles.cardsContainer}>
-          <TouchableOpacity
-            style={[styles.card, mode === 'auto' && styles.cardActive]}
+          <WelcomeModeCard
+            icon="🤖"
+            title="Automatico"
+            description="Pelo peso"
+            isActive={mode === 'auto'}
             onPress={() => {
               Keyboard.dismiss();
               setMode('auto');
             }}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.cardIcon}>🤖</Text>
-            <Text style={[styles.cardTitle, mode === 'auto' && styles.textActive]}>Automatico</Text>
-            <Text style={[styles.cardDesc, mode === 'auto' && styles.textActive]}>Pelo peso</Text>
-          </TouchableOpacity>
+            cardStyle={styles.card}
+            activeCardStyle={styles.cardActive}
+            titleStyle={styles.cardTitle}
+            descriptionStyle={styles.cardDesc}
+            activeTextStyle={styles.textActive}
+            iconStyle={styles.cardIcon}
+          />
 
-          <TouchableOpacity
-            style={[styles.card, mode === 'manual' && styles.cardActive]}
+          <WelcomeModeCard
+            icon="⚙️"
+            title="Manual"
+            description="Voce define"
+            isActive={mode === 'manual'}
             onPress={() => {
               Keyboard.dismiss();
               setMode('manual');
             }}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.cardIcon}>⚙️</Text>
-            <Text style={[styles.cardTitle, mode === 'manual' && styles.textActive]}>Manual</Text>
-            <Text style={[styles.cardDesc, mode === 'manual' && styles.textActive]}>Voce define</Text>
-          </TouchableOpacity>
+            cardStyle={styles.card}
+            activeCardStyle={styles.cardActive}
+            titleStyle={styles.cardTitle}
+            descriptionStyle={styles.cardDesc}
+            activeTextStyle={styles.textActive}
+            iconStyle={styles.cardIcon}
+          />
         </View>
 
         <View style={styles.formContainer}>

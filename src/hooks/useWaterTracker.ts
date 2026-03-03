@@ -1,17 +1,20 @@
 // src/hooks/useWaterTracker.ts
 import { useState, useEffect, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
-import {
-  scheduleHydrationReminders,
-  requestNotificationPermission,
-  cancelHydrationRemindersForToday,
-  cancelAllHydrationReminders,
-} from '../utils/notifications';
-import { timeToMinutes, getTodayDate, getYesterdayDate } from '../utils/time';
-import { normalizeProgressForToday, calculateNextStreak } from '../utils/progress';
+import { requestNotificationPermission } from '../utils/notifications';
+import { getTodayDate, getYesterdayDate } from '../utils/time';
+import { normalizeProgressForToday } from '../utils/progress';
 import { resolveEffectiveDailyGoal } from '../utils/dailyGoal';
+import {
+  buildProgressAfterDrink,
+  buildProgressAfterReset,
+  buildProgressAfterUndo,
+  calculateNextDrinkAmount,
+  generateDrinkId,
+} from '../utils/waterTrackerDomain';
 import { DayProgress, UserConfig, Drink, WaterTrackerReturn } from '../types';
 import * as Storage from '../services/storage';
+import { syncHydrationNotifications } from '../services/hydrationNotifications';
 import { Logger } from '../services/logger';
 import {
   DEFAULT_WEIGHT,
@@ -23,14 +26,8 @@ import {
   DEFAULT_MODE,
   DEFAULT_MANUAL_CUP_SIZE,
   ML_PER_KG,
-  ROUNDING_STEP,
   FALLBACK_DRINK_AMOUNT,
 } from '../constants/config';
-
-// Gera ID único
-const generateId = (): string => {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
-};
 
 // Configuração Padrão (Agora com suporte a Modo Manual)
 const DEFAULT_CONFIG: UserConfig = {
@@ -113,50 +110,10 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     }
   };
 
-  // --- LÓGICA DE CÁLCULO DO COPO (AUTO vs MANUAL) ---
   const recalculateNextDrink = useCallback(() => {
     const activeGoalMl = getEffectiveGoal(config, progress);
-    const remainingMl = Math.max(0, activeGoalMl - progress.consumedMl);
-    let finalAmount = 0;
-
-    // ⚙️ MODO MANUAL: Respeita o tamanho da garrafa do usuário
-    if (config.mode === 'manual') {
-        const cupSize = config.manualCupSize || 500;
-        
-        // Se já bateu a meta (Modo Infinito) -> Sugere garrafa cheia
-        if (progress.consumedMl >= activeGoalMl) {
-            finalAmount = cupSize;
-        } 
-        // Se falta pouquinho (menos que uma garrafa) -> Sugere o resto exato
-        else if (remainingMl < cupSize) {
-            finalAmount = remainingMl;
-        } 
-        // Dia normal -> Garrafa cheia
-        else {
-            finalAmount = cupSize;
-        }
-    } 
-    // 🤖 MODO AUTOMÁTICO: Calcula baseado no tempo (Lógica Original)
-    else {
-        const startMins = timeToMinutes(config.startTime);
-        const endMins = timeToMinutes(config.endTime);
-        const totalDayMinutes = endMins - startMins;
-        const totalSlots = Math.floor(totalDayMinutes / config.intervalMinutes) + 1;
-        const safeSlots = Math.max(1, totalSlots);
-        
-        const standardCupSize = activeGoalMl / safeSlots;
-        const roundedStandardCup = Math.ceil(standardCupSize / ROUNDING_STEP) * ROUNDING_STEP;
-
-        if (progress.consumedMl >= activeGoalMl) {
-            finalAmount = roundedStandardCup;
-        } else if (remainingMl < standardCupSize) {
-            finalAmount = remainingMl;
-        } else {
-            finalAmount = roundedStandardCup;
-        }
-    }
-    
-    setNextDrinkAmount(finalAmount);
+    const nextAmount = calculateNextDrinkAmount(config, progress.consumedMl, activeGoalMl);
+    setNextDrinkAmount(nextAmount);
   }, [config, progress.consumedMl]);
 
   const handleNotifications = useCallback(async (
@@ -164,32 +121,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     currentConfig: UserConfig,
     currentGoalMl: number
   ) => {
-    try {
-      // 1. Se desligado globalmente: CANCELA
-      if (!currentConfig.notificationsEnabled) {
-        Logger.info("NOTIFICATIONS_DISABLED_BY_USER");
-        await cancelAllHydrationReminders();
-        return;
-      }
-
-      // 2. Se meta batida: CANCELA (Silêncio merecido)
-      if (currentProgressMl >= currentGoalMl) {
-        Logger.info("GOAL_REACHED_SILENCING_NOTIFICATIONS");
-        await cancelHydrationRemindersForToday();
-        return;
-      }
-
-      // 3. Caso contrário: AGENDA/REAGENDA
-      const reminderConfig = {
-        startTime: currentConfig.startTime,
-        endTime: currentConfig.endTime,
-        intervalMinutes: currentConfig.intervalMinutes,
-      };
-      await scheduleHydrationReminders(reminderConfig);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      Logger.error('NOTIFICATION_UPDATE_FAILED', { message });
-    }
+    await syncHydrationNotifications(currentProgressMl, currentGoalMl, currentConfig);
   }, []);
 
   const saveConfigData = async (newConfig: UserConfig) => {
@@ -228,36 +160,23 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const yesterday = getYesterdayDate();
     const activeGoalMl = getEffectiveGoal(config, progress, today);
     const amountToDrink = nextDrinkAmount > 0 ? nextDrinkAmount : FALLBACK_DRINK_AMOUNT;
-    
+
     const newDrink: Drink = {
-      id: generateId(),
+      id: generateDrinkId(),
       amount: amountToDrink,
       timestamp: new Date().toISOString(),
     };
-    
-    // Streak Logic
-    const isNewDay = progress.lastDrinkDate !== today;
-    let newStreak = progress.streak;
+
+    const { newProgress, isNewDay, previousStreak } = buildProgressAfterDrink(progress, newDrink, today, yesterday);
+    const newTotal = newProgress.consumedMl;
 
     if (isNewDay) {
-      const oldStreak = progress.streak;
-      newStreak = calculateNextStreak(oldStreak, progress.lastDrinkDate, today, yesterday);
-
       if (progress.lastDrinkDate === yesterday) {
-        Logger.streakUpdated(oldStreak, newStreak, 'continued');
+        Logger.streakUpdated(previousStreak, newProgress.streak, 'continued');
       } else {
-        Logger.streakUpdated(oldStreak, newStreak, 'reset');
+        Logger.streakUpdated(previousStreak, newProgress.streak, 'reset');
       }
     }
-
-    const newTotal = isNewDay ? amountToDrink : progress.consumedMl + amountToDrink;
-    const newProgress: DayProgress = {
-      ...progress,
-      consumedMl: newTotal,
-      drinks: isNewDay ? [newDrink] : [...progress.drinks, newDrink],
-      streak: newStreak,
-      lastDrinkDate: today
-    };
 
     await saveProgressData(newProgress);
     Logger.drink(amountToDrink, newTotal, activeGoalMl);
@@ -274,28 +193,14 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
   // --- DESFAZER ---
   const undoLastDrink = async () => {
-    if (progress.drinks.length === 0) return;
-    
-    const lastDrink = progress.drinks[progress.drinks.length - 1];
-    const newDrinks = progress.drinks.slice(0, -1);
-    const newTotal = Math.max(0, progress.consumedMl - lastDrink.amount);
-    
-    let newStreak = progress.streak;
-    if (newDrinks.length === 0 && progress.streak > 0) {
-      newStreak = progress.streak - 1;
-    }
-
-    const newProgress = {
-      ...progress,
-      consumedMl: newTotal,
-      drinks: newDrinks,
-      streak: newStreak,
-    };
+    const undoResult = buildProgressAfterUndo(progress);
+    if (!undoResult) return;
+    const { newProgress, removedDrink } = undoResult;
+    const newTotal = newProgress.consumedMl;
 
     await saveProgressData(newProgress);
-    Logger.undo(lastDrink.amount, newTotal);
-    
-    // Ao desfazer, verifica se precisa voltar a notificar
+    Logger.undo(removedDrink.amount, newTotal);
+
     const todayGoalMl = getEffectiveGoal(config, newProgress);
     await handleNotifications(newTotal, config, todayGoalMl);
   };
@@ -304,16 +209,10 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   const resetDay = async () => {
     const doReset = async () => {
       const previousTotal = progress.consumedMl;
-      let newStreak = progress.streak;
-      if (progress.drinks.length > 0 && progress.streak > 0) {
-        newStreak = progress.streak - 1;
-      }
-
-      const newProgress = { ...progress, consumedMl: 0, drinks: [], streak: newStreak };
+      const newProgress = buildProgressAfterReset(progress);
       await saveProgressData(newProgress);
       Logger.reset(previousTotal);
-      
-      // Ao zerar, volta a notificar (se estiver ativado)
+
       const todayGoalMl = getEffectiveGoal(config, newProgress);
       await handleNotifications(0, config, todayGoalMl);
     };

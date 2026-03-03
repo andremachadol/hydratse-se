@@ -1,171 +1,125 @@
-# Hydrate-se 💧 Seu Assistente Pessoal de Hidratação
+# Hidrate-se
 
-![Status do Projeto](https://img.shields.io/badge/Status-Concluído-brightgreen)
-![License](https://img.shields.io/badge/License-MIT-blue)
-![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue)
-![React Native](https://img.shields.io/badge/Framework-React_Native-blueviolet)
-![Expo](https://img.shields.io/badge/Expo-SDK_54-000020)
+App mobile para acompanhamento de hidratacao diaria, com foco em rotina real, lembretes locais e UX simples.
 
-> "Pequenos goles, grandes mudanças."
+## Stack
+- Expo SDK 54
+- React Native 0.81
+- React 19
+- TypeScript (strict)
+- AsyncStorage
+- expo-notifications
+- react-native-svg
+- expo-linear-gradient
+- expo-av
 
-O **Hydrate-se 💧** é um aplicativo móvel focado em ajudar usuários a manterem hábitos saudáveis de hidratação. Diferente de simples contadores, ele utiliza um algoritmo inteligente que adapta a meta diária baseada no peso do usuário e na jornada de trabalho, além de garantir a integridade dos dados através de tipagem estática rigorosa.
+## Funcionalidades
+- Meta automatica por peso (`35 ml/kg`) ou meta manual
+- Controle de consumo diario com historico de goles
+- Streak diario (sequencia de dias)
+- Anel de progresso
+- Splash animada com audio
+- Notificacoes locais com janela configuravel
 
----
+## Regras de notificacao (atual)
+- Janela do usuario: `startTime` ate `endTime`
+- Intervalo: `30` ou `60` minutos
+- Slots comecam no `startTime` (nao perde a primeira janela)
+- Agendamento por `DATE` para hoje e amanha
+- Ao bater meta: cancela somente notificacoes de hoje
+- Amanhana continua garantido mesmo sem abrir o app
+- Se notificacoes forem desativadas: remove todas as notificacoes de hidratacao gerenciadas pelo app
 
-## 🎬 Demo
+## Inicio tardio no onboarding
+- Se o usuario configurar no meio da janela diaria, o app oferece duas opcoes:
+1. Manter meta normal
+2. Ajustar somente a meta de hoje por seguranca
+- Esse ajuste vira um override diario e expira automaticamente no dia seguinte
 
-https://github.com/user-attachments/assets/f5dfa5de-b467-4e9c-8b18-9a581f73f8ef
-
----
-
-## 📱 Funcionalidades Principais
-
-- **Splash Animada:** Tela de carregamento com animação de enchimento de copo e efeito sonoro, com duração inteligente que se adapta ao tempo de carregamento do dispositivo
-- **Meta Inteligente:** Calculadora integrada que define a meta ideal baseada no peso corporal (35ml/kg)
-- **Anel de Progresso:** Visualização gráfica animada (SVG) do consumo diário em tempo real
-- **Lembretes Personalizados:** Notificações locais baseadas na sua jornada (horário de acordar/dormir e intervalo)
-- **Histórico Blindado:** Controle de datas em formato ISO (YYYY-MM-DD) para evitar erros de fuso horário
-- **Modo Infinito:** Continue registrando água mesmo após bater a meta diária
-- **Streak (Sequência):** Acompanhe quantos dias consecutivos você manteve a hidratação
-- **Acessibilidade:** Labels e hints para leitores de tela
-- **Validação Robusta:** Peso (20-650kg), horários e dados persistidos validados
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-| Categoria | Tecnologia |
-|-----------|------------|
-| Linguagem | TypeScript 5.9 |
-| Framework | React Native 0.81 + Expo SDK 54 |
-| Estado | React Hooks (Custom Hook `useWaterTracker`) |
-| Armazenamento | AsyncStorage com abstração de serviço |
-| Gráficos | react-native-svg |
-| Notificações | expo-notifications |
-| UI | expo-linear-gradient |
-| Áudio | expo-av |
-
----
-
-## 📂 Arquitetura do Projeto
-
-```
+## Estrutura
+```text
 src/
-├── components/          # Componentes visuais (memoizados)
-│   ├── DrinkControls.tsx
-│   ├── ErrorBoundary.tsx
-│   ├── HydrationTips.tsx
-│   ├── ProgressRing.tsx
-│   ├── SettingsModal.tsx
-│   └── SplashAnimation.tsx  # Splash screen animada com som
-├── constants/
-│   ├── config.ts        # Configurações centralizadas (pesos, intervalos, etc.)
-│   └── theme.ts         # Cores e estilos globais
-├── hooks/
-│   └── useWaterTracker.ts  # Lógica principal de estado
-├── screens/
-│   └── HomeScreen.tsx   # Tela principal
-├── services/
-│   ├── logger.ts        # Logging estruturado
-│   └── storage.ts       # Abstração do AsyncStorage
-├── types/
-│   └── index.ts         # Interfaces TypeScript
-└── utils/
-    └── notifications.ts # Agendamento de notificações
-
-assets/
-└── sounds/
-    └── filling.mp3       # Efeito sonoro da splash screen
-
-App.tsx                  # Ponto de entrada com ErrorBoundary
+  components/
+    DrinkControls.tsx
+    ErrorBoundary.tsx
+    HydrationTips.tsx
+    ProgressRing.tsx
+    SettingsModal.tsx
+    SplashAnimation.tsx
+    WelcomeModeCard.tsx
+  constants/
+    config.ts
+    theme.ts
+  hooks/
+    useWaterTracker.ts
+  screens/
+    HomeScreen.tsx
+    WelcomeScreen.tsx
+  services/
+    hydrationNotifications.ts
+    logger.ts
+    storage.ts
+  types/
+    index.ts
+  utils/
+    dailyGoal.ts
+    notifications.ts
+    onboarding.ts
+    progress.ts
+    reminderSlots.ts
+    time.ts
+    waterTrackerDomain.ts
+tests/
+  dailyGoal.test.ts
+  notifications.test.ts
+  onboarding.test.ts
+  progress.test.ts
+  waterTrackerDomain.test.ts
 ```
 
-### Padrões Arquiteturais
+## Como rodar
 
-- **Storage Service:** Abstração sobre AsyncStorage para facilitar troca futura de backend
-- **Config Centralizada:** Valores mágicos (35ml/kg, limites, etc.) em arquivo único
-- **Logger Service:** Logs estruturados para debug e monitoramento
-- **Error Boundary:** Captura de erros com tela amigável
-- **Memoização:** Componentes otimizados com `React.memo`
-
----
-
-## 🚀 Como Rodar o Projeto
-
-### Pré-requisitos
-
+### Requisitos
 - Node.js 18+
-- Expo Go (no celular) ou emulador Android/iOS
+- npm
+- Expo Go (mobile) ou emulador
 
-### Instalação
-
+### Instalar
 ```bash
-# Clone o repositório
-git clone https://github.com/andremachadol/hydratse-se.git
-
-# Entre na pasta
-cd hydratse-se
-
-# Instale as dependências
 npm install
-
-# Inicie o servidor
-npx expo start
 ```
 
-### Executar
+### Desenvolvimento
+```bash
+npm run start
+```
 
-- **Celular:** Escaneie o QR Code com o app Expo Go
-- **Android:** Pressione `a` no terminal
-- **iOS:** Pressione `i` no terminal
-- **Web:** Pressione `w` no terminal
+Scripts disponiveis:
+- `npm run start`
+- `npm run android`
+- `npm run ios`
+- `npm run web`
 
-### Build de Produção
+## Testes
+Este projeto usa o test runner nativo do Node com TypeScript via `--experimental-strip-types`.
 
 ```bash
-# APK para teste (Android)
+npm run test
+```
+
+Modo watch:
+```bash
+npm run test:watch
+```
+
+## Build
+```bash
+# Android preview (APK)
 eas build --platform android --profile preview
 
-# Build de produção
+# Producao
 eas build --platform android --profile production
 ```
 
----
-
-## ⚙️ Configuração
-
-O app usa as seguintes constantes (editáveis em `src/constants/config.ts`):
-
-| Constante | Valor | Descrição |
-|-----------|-------|-----------|
-| `ML_PER_KG` | 35 | ml de água por kg de peso |
-| `MIN_WEIGHT` | 20 | Peso mínimo aceito (kg) |
-| `MAX_WEIGHT` | 650 | Peso máximo aceito (kg) |
-| `HEALTH_WARNING_WEIGHT` | 200 | Peso que dispara alerta de saúde |
-| `DEFAULT_INTERVAL_MINUTES` | 60 | Intervalo padrão entre lembretes |
-
----
-
-## 🧪 Roadmap
-
-- [ ] Gamificação (Conquistas e Medalhas)
-- [ ] Modo Escuro/Claro
-- [ ] Histórico semanal/mensal com gráficos
-- [ ] Sincronização com nuvem
-- [ ] Widget para tela inicial
-
----
-
-## 🎵 Créditos
-
-- Efeito sonoro da splash screen por [Universfield](https://pixabay.com/users/universfield-28281460/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=191999) via [Pixabay](https://pixabay.com/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=191999)
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
----
-
-Desenvolvido com 💧 por [André Machado](https://github.com/andremachadol)
+## Licenca
+MIT
