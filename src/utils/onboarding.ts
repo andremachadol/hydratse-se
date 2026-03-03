@@ -10,19 +10,22 @@ type OnboardingResult =
   | { ok: true; value: OnboardingResolved }
   | { ok: false; errorMessage: string };
 
-const MIN_WEIGHT = 20;
-const MAX_WEIGHT = 650;
+type OnboardingConstraints = {
+  minWeight: number;
+  maxWeight: number;
+};
 
 export const resolveOnboardingInputs = (
   mode: CalculationMode,
   weightInput: string,
   manualGoalInput: string,
   manualCupInput: string,
-  mlPerKg: number
+  mlPerKg: number,
+  constraints: OnboardingConstraints
 ): OnboardingResult => {
   if (mode === 'auto') {
     const weight = parseFloat(weightInput.replace(',', '.'));
-    if (!weight || weight < MIN_WEIGHT || weight > MAX_WEIGHT) {
+    if (!weight || weight < constraints.minWeight || weight > constraints.maxWeight) {
       return { ok: false, errorMessage: 'Informe um peso valido (kg).' };
     }
 

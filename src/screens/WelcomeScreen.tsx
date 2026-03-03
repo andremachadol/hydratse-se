@@ -22,6 +22,8 @@ import {
   DEFAULT_NOTIFICATIONS_ENABLED,
   SAFE_MAX_ML_PER_HOUR,
   ML_PER_KG,
+  MIN_WEIGHT,
+  MAX_WEIGHT,
 } from '../constants/config';
 import { calculateSafeGoalForRemainingWindow, isLateStartToday } from '../utils/dailyGoal';
 import { getTodayDate, timeToMinutes } from '../utils/time';
@@ -63,7 +65,14 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
 
   const handleStart = async () => {
     Keyboard.dismiss();
-    const resolvedInputs = resolveOnboardingInputs(mode, weight, manualGoal, manualCup, ML_PER_KG);
+    const resolvedInputs = resolveOnboardingInputs(
+      mode,
+      weight,
+      manualGoal,
+      manualCup,
+      ML_PER_KG,
+      { minWeight: MIN_WEIGHT, maxWeight: MAX_WEIGHT }
+    );
     if (!resolvedInputs.ok) {
       return Alert.alert('Ops', resolvedInputs.errorMessage);
     }

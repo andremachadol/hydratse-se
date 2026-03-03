@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildInitialProgress, resolveOnboardingInputs } from '../src/utils/onboarding.ts';
 
+const constraints = { minWeight: 20, maxWeight: 650 };
+
 test('resolveOnboardingInputs auto retorna peso/meta validos', () => {
-  const result = resolveOnboardingInputs('auto', '70', '', '', 35);
+  const result = resolveOnboardingInputs('auto', '70', '', '', 35, constraints);
   assert.equal(result.ok, true);
   if (result.ok) {
     assert.equal(result.value.weight, 70);
@@ -12,7 +14,7 @@ test('resolveOnboardingInputs auto retorna peso/meta validos', () => {
 });
 
 test('resolveOnboardingInputs auto valida peso invalido', () => {
-  const result = resolveOnboardingInputs('auto', '10', '', '', 35);
+  const result = resolveOnboardingInputs('auto', '10', '', '', 35, constraints);
   assert.equal(result.ok, false);
   if (!result.ok) {
     assert.equal(result.errorMessage, 'Informe um peso valido (kg).');
@@ -20,13 +22,13 @@ test('resolveOnboardingInputs auto valida peso invalido', () => {
 });
 
 test('resolveOnboardingInputs manual valida meta e copo', () => {
-  const invalidGoal = resolveOnboardingInputs('manual', '', '200', '500', 35);
+  const invalidGoal = resolveOnboardingInputs('manual', '', '200', '500', 35, constraints);
   assert.equal(invalidGoal.ok, false);
 
-  const invalidCup = resolveOnboardingInputs('manual', '', '3000', '20', 35);
+  const invalidCup = resolveOnboardingInputs('manual', '', '3000', '20', 35, constraints);
   assert.equal(invalidCup.ok, false);
 
-  const valid = resolveOnboardingInputs('manual', '', '3000', '500', 35);
+  const valid = resolveOnboardingInputs('manual', '', '3000', '500', 35, constraints);
   assert.equal(valid.ok, true);
   if (valid.ok) {
     assert.equal(valid.value.goalMl, 3000);

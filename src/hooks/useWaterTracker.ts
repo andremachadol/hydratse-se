@@ -65,7 +65,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   // 2. Recalcular o copo sempre que beber ou mudar config
   useEffect(() => {
     recalculateNextDrink();
-  }, [config, progress.consumedMl]);
+  }, [config, progress.consumedMl, progress.goalOverrideMl, progress.goalOverrideDate]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -114,7 +114,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const activeGoalMl = getEffectiveGoal(config, progress);
     const nextAmount = calculateNextDrinkAmount(config, progress.consumedMl, activeGoalMl);
     setNextDrinkAmount(nextAmount);
-  }, [config, progress.consumedMl]);
+  }, [config, progress.consumedMl, progress.goalOverrideMl, progress.goalOverrideDate]);
 
   const handleNotifications = useCallback(async (
     currentProgressMl: number,
