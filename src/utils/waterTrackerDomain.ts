@@ -1,4 +1,5 @@
 import type { DayProgress, Drink, UserConfig } from '../types';
+import { archiveDayIfNeeded, computeBestDay } from './dayHistory.ts';
 
 const ROUNDING_STEP = 10;
 
@@ -59,6 +60,9 @@ export const buildProgressAfterDrink = (
 ): { newProgress: DayProgress; isNewDay: boolean; previousStreak: number } => {
   const isNewDay = progress.lastDrinkDate !== today;
   const previousStreak = progress.streak;
+  const historyWithArchive = isNewDay
+    ? archiveDayIfNeeded(progress.dayHistory, progress.lastDrinkDate, progress.consumedMl)
+    : (progress.dayHistory ?? []);
 
   let newStreak = progress.streak;
   if (isNewDay) {
@@ -66,12 +70,17 @@ export const buildProgressAfterDrink = (
   }
 
   const newTotal = isNewDay ? newDrink.amount : progress.consumedMl + newDrink.amount;
-  const newProgress: DayProgress = {
+  const newProgressBase: DayProgress = {
     ...progress,
     consumedMl: newTotal,
     drinks: isNewDay ? [newDrink] : [...progress.drinks, newDrink],
     streak: newStreak,
     lastDrinkDate: today,
+    dayHistory: historyWithArchive,
+  };
+  const newProgress: DayProgress = {
+    ...newProgressBase,
+    bestDay: computeBestDay(historyWithArchive, { date: today, consumedMl: newTotal }),
   };
 
   return { newProgress, isNewDay, previousStreak };
@@ -91,13 +100,24 @@ export const buildProgressAfterUndo = (
     newStreak = progress.streak - 1;
   }
 
+  const history = progress.dayHistory ?? [];
+  const newProgressBase: DayProgress = {
+    ...progress,
+    consumedMl: newTotal,
+    drinks: newDrinks,
+    streak: newStreak,
+    dayHistory: history,
+  };
+  const currentDayCandidate =
+    newProgressBase.lastDrinkDate && newProgressBase.consumedMl > 0
+      ? { date: newProgressBase.lastDrinkDate, consumedMl: newProgressBase.consumedMl }
+      : undefined;
+
   return {
     removedDrink: lastDrink,
     newProgress: {
-      ...progress,
-      consumedMl: newTotal,
-      drinks: newDrinks,
-      streak: newStreak,
+      ...newProgressBase,
+      bestDay: computeBestDay(history, currentDayCandidate),
     },
   };
 };
@@ -108,10 +128,13 @@ export const buildProgressAfterReset = (progress: DayProgress): DayProgress => {
     newStreak = progress.streak - 1;
   }
 
+  const history = progress.dayHistory ?? [];
   return {
     ...progress,
     consumedMl: 0,
     drinks: [],
     streak: newStreak,
+    dayHistory: history,
+    bestDay: computeBestDay(history),
   };
 };

@@ -8,15 +8,26 @@ const STORAGE_KEYS = {
   PROGRESS: '@progress',
 } as const;
 
+const isValidDayHistoryEntry = (data: unknown): boolean => {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return typeof d.date === 'string' && typeof d.consumedMl === 'number';
+};
+
 // Validadores de schema
 const isValidProgress = (data: unknown): data is DayProgress => {
   if (!data || typeof data !== 'object') return false;
   const d = data as Record<string, unknown>;
+  const history = d.dayHistory;
+  const bestDay = d.bestDay;
+
   return (
     typeof d.consumedMl === 'number' &&
     Array.isArray(d.drinks) &&
     typeof d.streak === 'number' &&
     typeof d.lastDrinkDate === 'string' &&
+    (history === undefined || (Array.isArray(history) && history.every(isValidDayHistoryEntry))) &&
+    (bestDay === undefined || isValidDayHistoryEntry(bestDay)) &&
     (d.goalOverrideMl === undefined || typeof d.goalOverrideMl === 'number') &&
     (d.goalOverrideDate === undefined || typeof d.goalOverrideDate === 'string')
   );

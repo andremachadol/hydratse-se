@@ -42,6 +42,7 @@ test('buildProgressAfterDrink cria novo dia e atualiza streak', () => {
     drinks: [{ id: 'a', amount: 1200, timestamp: '2026-03-02T09:00:00.000Z' }],
     streak: 3,
     lastDrinkDate: '2026-03-02',
+    dayHistory: [],
   };
 
   const result = buildProgressAfterDrink(
@@ -55,6 +56,8 @@ test('buildProgressAfterDrink cria novo dia e atualiza streak', () => {
   assert.equal(result.newProgress.consumedMl, 300);
   assert.equal(result.newProgress.streak, 4);
   assert.equal(result.newProgress.drinks.length, 1);
+  assert.deepEqual(result.newProgress.dayHistory, [{ date: '2026-03-02', consumedMl: 1200 }]);
+  assert.deepEqual(result.newProgress.bestDay, { date: '2026-03-02', consumedMl: 1200 });
 });
 
 test('buildProgressAfterUndo retorna null sem historico', () => {
@@ -77,6 +80,8 @@ test('buildProgressAfterUndo e buildProgressAfterReset atualizam estado', () => 
     ],
     streak: 5,
     lastDrinkDate: '2026-03-03',
+    dayHistory: [{ date: '2026-03-02', consumedMl: 1200 }],
+    bestDay: { date: '2026-03-02', consumedMl: 1200 },
   };
 
   const undo = buildProgressAfterUndo(progress);
@@ -84,10 +89,12 @@ test('buildProgressAfterUndo e buildProgressAfterReset atualizam estado', () => 
   if (undo) {
     assert.equal(undo.newProgress.consumedMl, 300);
     assert.equal(undo.removedDrink.amount, 500);
+    assert.deepEqual(undo.newProgress.bestDay, { date: '2026-03-02', consumedMl: 1200 });
   }
 
   const reset = buildProgressAfterReset(progress);
   assert.equal(reset.consumedMl, 0);
   assert.equal(reset.drinks.length, 0);
   assert.equal(reset.streak, 4);
+  assert.deepEqual(reset.bestDay, { date: '2026-03-02', consumedMl: 1200 });
 });

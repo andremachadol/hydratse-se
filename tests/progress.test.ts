@@ -27,6 +27,8 @@ test('normalizeProgressForToday zera consumo e drinks quando dia mudou', () => {
   assert.deepEqual(normalized.drinks, []);
   assert.equal(normalized.streak, 4);
   assert.equal(normalized.lastDrinkDate, '2026-03-02');
+  assert.deepEqual(normalized.dayHistory, [{ date: '2026-03-02', consumedMl: 1200 }]);
+  assert.deepEqual(normalized.bestDay, { date: '2026-03-02', consumedMl: 1200 });
   assert.equal(normalized.goalOverrideMl, undefined);
   assert.equal(normalized.goalOverrideDate, undefined);
 });

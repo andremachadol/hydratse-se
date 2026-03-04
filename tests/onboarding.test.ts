@@ -40,8 +40,12 @@ test('buildInitialProgress cria override apenas quando informado', () => {
   const withOverride = buildInitialProgress(1200, '2026-03-03');
   assert.equal(withOverride.goalOverrideMl, 1200);
   assert.equal(withOverride.goalOverrideDate, '2026-03-03');
+  assert.deepEqual(withOverride.dayHistory, []);
+  assert.equal(withOverride.bestDay, undefined);
 
   const noOverride = buildInitialProgress();
   assert.equal(noOverride.goalOverrideMl, undefined);
   assert.equal(noOverride.goalOverrideDate, undefined);
+  assert.deepEqual(noOverride.dayHistory, []);
+  assert.equal(noOverride.bestDay, undefined);
 });

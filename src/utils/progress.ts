@@ -1,4 +1,5 @@
 import type { DayProgress } from '../types';
+import { archiveDayIfNeeded, computeBestDay } from './dayHistory.ts';
 
 export const normalizeProgressForToday = (
   progress: DayProgress,
@@ -9,10 +10,22 @@ export const normalizeProgressForToday = (
 
   if (!shouldResetDay && !shouldClearOverride) return progress;
 
+  const normalizedConsumedMl = shouldResetDay ? 0 : progress.consumedMl;
+  const normalizedLastDrinkDate = progress.lastDrinkDate;
+  const historyAfterArchive = shouldResetDay
+    ? archiveDayIfNeeded(progress.dayHistory, progress.lastDrinkDate, progress.consumedMl)
+    : (progress.dayHistory ?? []);
+  const currentDayCandidate =
+    normalizedLastDrinkDate === today && normalizedConsumedMl > 0
+      ? { date: today, consumedMl: normalizedConsumedMl }
+      : undefined;
+
   return {
     ...progress,
-    consumedMl: shouldResetDay ? 0 : progress.consumedMl,
+    consumedMl: normalizedConsumedMl,
     drinks: shouldResetDay ? [] : progress.drinks,
+    dayHistory: historyAfterArchive,
+    bestDay: computeBestDay(historyAfterArchive, currentDayCandidate),
     goalOverrideMl: shouldClearOverride ? undefined : progress.goalOverrideMl,
     goalOverrideDate: shouldClearOverride ? undefined : progress.goalOverrideDate,
   };

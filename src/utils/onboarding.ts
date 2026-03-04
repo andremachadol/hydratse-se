@@ -71,6 +71,8 @@ export const buildInitialProgress = (
     drinks: [],
     streak: 0,
     lastDrinkDate: '',
+    dayHistory: [],
+    bestDay: undefined,
     goalOverrideMl: todayGoalOverrideMl,
     goalOverrideDate: todayGoalOverrideMl ? todayDate : undefined,
   };

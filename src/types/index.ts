@@ -19,11 +19,23 @@ export interface UserConfig {
   manualCupSize: number;
 }
 
+export interface DayHistoryEntry {
+  date: string;
+  consumedMl: number;
+}
+
+export interface BestDayRecord {
+  date: string;
+  consumedMl: number;
+}
+
 export interface DayProgress {
   consumedMl: number;
   drinks: Drink[];
   streak: number;
   lastDrinkDate: string;
+  dayHistory?: DayHistoryEntry[];
+  bestDay?: BestDayRecord;
   goalOverrideMl?: number;
   goalOverrideDate?: string;
 }
