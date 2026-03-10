@@ -40,6 +40,14 @@ export interface DayProgress {
   goalOverrideDate?: string;
 }
 
+export interface TrackerPersistence {
+  config: UserConfig;
+  progress: DayProgress;
+  isLoading: boolean;
+  persistProgress: (newProgress: DayProgress) => Promise<boolean>;
+  persistConfig: (newConfig: UserConfig) => Promise<boolean>;
+}
+
 export interface WaterTrackerReturn {
   config: UserConfig;
   progress: DayProgress;
@@ -47,7 +55,7 @@ export interface WaterTrackerReturn {
   nextDrinkAmount: number;
   goalReached: boolean;
   isLoading: boolean;
-  saveConfig: (newConfig: UserConfig) => Promise<void>;
+  saveConfig: (newConfig: UserConfig) => Promise<boolean>;
   addDrink: () => Promise<void>;
   undoLastDrink: () => Promise<void>;
   resetDay: () => Promise<void>;

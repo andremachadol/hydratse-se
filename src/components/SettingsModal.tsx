@@ -19,7 +19,7 @@ import { formatIntegerInput, formatTimeInput, formatWeightInput, resolveUserConf
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (newConfig: UserConfig) => Promise<void>;
+  onSave: (newConfig: UserConfig) => Promise<boolean>;
   currentConfig: UserConfig;
 }
 
@@ -69,8 +69,10 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
     }
 
     try {
-      await onSave(resolvedConfig.value);
-      onClose();
+      const saved = await onSave(resolvedConfig.value);
+      if (saved) {
+        onClose();
+      }
     } catch {
       Alert.alert('Erro', 'Não foi possível atualizar as configurações.');
     }

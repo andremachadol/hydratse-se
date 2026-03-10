@@ -1,34 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Alert, Platform } from 'react-native';
-import type { DayProgress, UserConfig, WaterTrackerReturn } from '../types';
-import * as Storage from '../services/storage';
+import type { WaterTrackerReturn } from '../types';
 import { Logger } from '../services/logger';
 import { syncHydrationNotifications } from '../services/hydrationNotifications';
 import { ensureNotificationPermission } from '../utils/notifications';
 import { getTodayDate, getYesterdayDate } from '../utils/time';
 import {
   buildPersistableConfig,
-  createDefaultConfig,
-  createEmptyProgress,
   getSuggestedDrinkAmount,
   getTodayGoalMl,
-  loadTrackerState,
   registerDrink,
   resetTrackedDay,
   undoTrackedDrink,
 } from '../utils/waterTrackerUseCases';
-
-const DEFAULT_CONFIG = createDefaultConfig();
+import { useTrackerPersistence } from './useTrackerPersistence';
+import type { UserConfig } from '../types';
 
 export const useWaterTracker = (): WaterTrackerReturn => {
-  const [config, setConfig] = useState<UserConfig>(DEFAULT_CONFIG);
-  const [progress, setProgress] = useState<DayProgress>(createEmptyProgress());
-  const [nextDrinkAmount, setNextDrinkAmount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const { config, progress, isLoading, persistProgress, persistConfig } = useTrackerPersistence();
 
   const today = getTodayDate();
   const todayGoalMl = getTodayGoalMl(config, progress, today);
   const goalReached = progress.consumedMl >= todayGoalMl;
+
+  const nextDrinkAmount = useMemo(
+    () => getSuggestedDrinkAmount(config, progress, getTodayDate()),
+    [config, progress.consumedMl, progress.goalOverrideMl, progress.goalOverrideDate]
+  );
 
   const handleNotifications = useCallback(
     async (currentProgressMl: number, currentConfig: UserConfig, currentGoalMl: number) => {
@@ -37,49 +35,9 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     []
   );
 
-  useEffect(() => {
-    void loadData();
+  const showProgressSaveError = useCallback(() => {
+    Alert.alert('Erro', 'Não foi possível salvar seu progresso agora.');
   }, []);
-
-  useEffect(() => {
-    setNextDrinkAmount(getSuggestedDrinkAmount(config, progress, getTodayDate()));
-  }, [config, progress.consumedMl, progress.goalOverrideMl, progress.goalOverrideDate]);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const loadedState = loadTrackerState({
-        savedConfig: await Storage.loadConfig(),
-        savedProgress: await Storage.loadProgress(),
-        today: getTodayDate(),
-        defaultConfig: DEFAULT_CONFIG,
-      });
-
-      setConfig(loadedState.config);
-      setProgress(loadedState.progress);
-
-      if (loadedState.shouldPersistProgress) {
-        await Storage.saveProgress(loadedState.progress);
-      }
-
-      const currentGoalMl = getTodayGoalMl(loadedState.config, loadedState.progress, getTodayDate());
-      await handleNotifications(loadedState.progress.consumedMl, loadedState.config, currentGoalMl);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const saveProgressData = async (newProgress: DayProgress) => {
-    const previousProgress = progress;
-    setProgress(newProgress);
-    const saved = await Storage.saveProgress(newProgress);
-    if (!saved) {
-      setProgress(previousProgress);
-      console.error('Falha ao persistir progresso, estado revertido');
-    }
-  };
 
   const resolveNotificationsForConfig = async (candidateConfig: UserConfig): Promise<UserConfig> => {
     if (!candidateConfig.notificationsEnabled) {
@@ -102,22 +60,20 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     };
   };
 
-  const saveConfigData = async (newConfig: UserConfig) => {
-    const previousConfig = config;
+  const saveConfigData = async (newConfig: UserConfig): Promise<boolean> => {
     let updatedConfig = buildPersistableConfig(newConfig);
     updatedConfig = await resolveNotificationsForConfig(updatedConfig);
 
-    setConfig(updatedConfig);
-    const saved = await Storage.saveConfig(updatedConfig);
+    const saved = await persistConfig(updatedConfig);
     if (!saved) {
-      setConfig(previousConfig);
       Alert.alert('Erro', 'Não foi possível salvar as configurações.');
-      return;
+      return false;
     }
 
     Logger.configSaved(updatedConfig.weight, updatedConfig.dailyGoalMl);
     const currentGoalMl = getTodayGoalMl(updatedConfig, progress, getTodayDate());
     await handleNotifications(progress.consumedMl, updatedConfig, currentGoalMl);
+    return true;
   };
 
   const addDrink = async () => {
@@ -139,7 +95,12 @@ export const useWaterTracker = (): WaterTrackerReturn => {
       }
     }
 
-    await saveProgressData(result.newProgress);
+    const saved = await persistProgress(result.newProgress);
+    if (!saved) {
+      showProgressSaveError();
+      return;
+    }
+
     Logger.drink(result.amountToDrink, result.newProgress.consumedMl, result.activeGoalMl);
 
     if (result.reachedGoalToday) {
@@ -163,7 +124,12 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const undoResult = undoTrackedDrink(progress);
     if (!undoResult) return;
 
-    await saveProgressData(undoResult.newProgress);
+    const saved = await persistProgress(undoResult.newProgress);
+    if (!saved) {
+      showProgressSaveError();
+      return;
+    }
+
     Logger.undo(undoResult.removedDrink.amount, undoResult.newProgress.consumedMl);
 
     const currentGoalMl = getTodayGoalMl(config, undoResult.newProgress, getTodayDate());
@@ -174,7 +140,12 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const doReset = async () => {
       const previousTotal = progress.consumedMl;
       const newProgress = resetTrackedDay(progress);
-      await saveProgressData(newProgress);
+      const saved = await persistProgress(newProgress);
+      if (!saved) {
+        showProgressSaveError();
+        return;
+      }
+
       Logger.reset(previousTotal);
 
       const currentGoalMl = getTodayGoalMl(config, newProgress, getTodayDate());
