@@ -1,24 +1,9 @@
 import type { DayProgress, Drink, UserConfig } from '../types';
 import { archiveDayIfNeeded, computeBestDay } from './dayHistory.ts';
+import { calculateNextStreak } from './progress.ts';
+import { timeToMinutes } from './time.ts';
 
 const ROUNDING_STEP = 10;
-
-const timeToMinutes = (time: string): number => {
-  if (!time) return 0;
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-};
-
-const calculateNextStreak = (
-  currentStreak: number,
-  lastDrinkDate: string,
-  today: string,
-  yesterday: string
-): number => {
-  if (lastDrinkDate === today) return currentStreak;
-  if (lastDrinkDate === yesterday) return currentStreak + 1;
-  return 1;
-};
 
 export const generateDrinkId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -30,10 +15,10 @@ export const calculateNextDrinkAmount = (
   activeGoalMl: number
 ): number => {
   const remainingMl = Math.max(0, activeGoalMl - consumedMl);
+  if (remainingMl <= 0) return 0;
 
   if (config.mode === 'manual') {
     const cupSize = config.manualCupSize || 500;
-    if (consumedMl >= activeGoalMl) return cupSize;
     if (remainingMl < cupSize) return remainingMl;
     return cupSize;
   }
@@ -47,7 +32,6 @@ export const calculateNextDrinkAmount = (
   const standardCupSize = activeGoalMl / safeSlots;
   const roundedStandardCup = Math.ceil(standardCupSize / ROUNDING_STEP) * ROUNDING_STEP;
 
-  if (consumedMl >= activeGoalMl) return roundedStandardCup;
   if (remainingMl < standardCupSize) return remainingMl;
   return roundedStandardCup;
 };

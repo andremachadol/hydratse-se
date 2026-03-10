@@ -27,7 +27,7 @@ const formatHistoryDate = (date: string): string => {
 };
 
 export default function HomeScreen() {
-  const { config, progress, todayGoalMl, nextDrinkAmount, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } =
+  const { config, progress, todayGoalMl, nextDrinkAmount, goalReached, isLoading, saveConfig, addDrink, undoLastDrink, resetDay } =
     useWaterTracker();
   const [modalVisible, setModalVisible] = useState(false);
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>(7);
@@ -150,6 +150,7 @@ export default function HomeScreen() {
               onUndo={undoLastDrink}
               onReset={resetDay}
               drinkSize={nextDrinkAmount}
+              goalReached={goalReached}
               hasHistory={progress.drinks.length > 0}
             />
           </View>

@@ -1,6 +1,6 @@
-import type { UserConfig } from '../types';
-import { cancelAllHydrationReminders, cancelHydrationRemindersForToday, scheduleHydrationReminders } from '../utils/notifications';
-import { Logger } from './logger';
+import type { UserConfig } from '../types/index.ts';
+import { cancelAllHydrationReminders, cancelHydrationRemindersForToday, scheduleHydrationReminders } from '../utils/notifications.ts';
+import { Logger } from './logger.ts';
 
 export const syncHydrationNotifications = async (
   currentProgressMl: number,
@@ -20,11 +20,16 @@ export const syncHydrationNotifications = async (
       return;
     }
 
-    await scheduleHydrationReminders({
+    const scheduled = await scheduleHydrationReminders({
       startTime: currentConfig.startTime,
       endTime: currentConfig.endTime,
       intervalMinutes: currentConfig.intervalMinutes,
     });
+
+    if (!scheduled) {
+      Logger.warn('NOTIFICATION_SCHEDULE_SKIPPED');
+      await cancelAllHydrationReminders();
+    }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     Logger.error('NOTIFICATION_UPDATE_FAILED', { message });

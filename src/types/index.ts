@@ -45,9 +45,10 @@ export interface WaterTrackerReturn {
   progress: DayProgress;
   todayGoalMl: number;
   nextDrinkAmount: number;
+  goalReached: boolean;
   isLoading: boolean;
   saveConfig: (newConfig: UserConfig) => Promise<void>;
   addDrink: () => Promise<void>;
   undoLastDrink: () => Promise<void>;
-  resetDay: () => void;
+  resetDay: () => Promise<void>;
 }

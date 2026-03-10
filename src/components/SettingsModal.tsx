@@ -1,9 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, Switch } from 'react-native';
-import { UserConfig, CalculationMode } from '../types';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Keyboard,
+  Modal,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import type { CalculationMode, UserConfig } from '../types';
 import { COLORS, SHADOWS } from '../constants/theme';
-import { MIN_WEIGHT, MAX_WEIGHT, HEALTH_WARNING_WEIGHT, ML_PER_KG } from '../constants/config';
-import { timeToMinutes } from '../utils/time';
+import { formatIntegerInput, formatTimeInput, formatWeightInput, resolveUserConfigForm } from '../utils/configValidation';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -13,103 +23,54 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ visible, onClose, onSave, currentConfig }: SettingsModalProps) {
-  // Estados
   const [mode, setMode] = useState<CalculationMode>('auto');
   const [weight, setWeight] = useState('');
   const [manualGoal, setManualGoal] = useState('');
   const [manualCup, setManualCup] = useState('');
-  
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [interval, setInterval] = useState(60);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
-    if (visible) {
-      setMode(currentConfig.mode || 'auto');
-      setWeight(currentConfig.weight.toString());
-      setManualCup(currentConfig.manualCupSize?.toString() || '500');
-      // No modo manual, a meta atual é a meta manual. No auto, calculamos na hora de salvar.
-      setManualGoal(currentConfig.dailyGoalMl.toString());
-      
-      setStartTime(currentConfig.startTime);
-      setEndTime(currentConfig.endTime);
-      setInterval(currentConfig.intervalMinutes);
-      setNotificationsEnabled(currentConfig.notificationsEnabled ?? true);
-    }
+    if (!visible) return;
+
+    setMode(currentConfig.mode || 'auto');
+    setWeight(currentConfig.weight.toString());
+    setManualCup(currentConfig.manualCupSize?.toString() || '500');
+    setManualGoal(currentConfig.dailyGoalMl.toString());
+    setStartTime(currentConfig.startTime);
+    setEndTime(currentConfig.endTime);
+    setInterval(currentConfig.intervalMinutes);
+    setNotificationsEnabled(currentConfig.notificationsEnabled ?? true);
   }, [visible, currentConfig]);
 
-  // Formatações
-  const formatNumber = (text: string) => text.replace(/\D/g, ''); // Só números inteiros para ml
-  
-  const handleWeightChange = (text: string) => {
-    const normalized = text.replace('.', ',');
-    const cleaned = normalized.replace(/[^0-9,]/g, '');
-    const [rawInt = '', rawDecimal = ''] = cleaned.split(',');
-
-    const intPart = rawInt.slice(0, 3);
-    const decimalPart = rawDecimal.slice(0, 2);
-    const hasComma = cleaned.includes(',');
-
-    if (!intPart && !hasComma) {
-      setWeight('');
-      return;
-    }
-
-    setWeight(hasComma ? `${intPart},${decimalPart}` : intPart);
-  };
-
   const handleSave = async () => {
-    // Validação de horários
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-      Alert.alert("Erro", "Use o formato HH:MM (ex: 08:00).");
+    const resolvedConfig = resolveUserConfigForm({
+      mode,
+      weightInput: weight,
+      manualGoalInput: manualGoal,
+      manualCupInput: manualCup,
+      startTime,
+      endTime,
+      intervalMinutes: interval,
+      notificationsEnabled,
+    });
+
+    if (!resolvedConfig.ok) {
+      Alert.alert('Erro', resolvedConfig.errorMessage);
       return;
     }
 
-    if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
-      Alert.alert("Erro", "O horário de acordar deve ser antes do horário de dormir.");
-      return;
-    }
-
-    let newConfig: UserConfig = {
-        mode,
-        startTime,
-        endTime,
-        intervalMinutes: interval,
-        notificationsEnabled,
-        weight: parseFloat(weight.replace(',', '.')) || 0,
-        manualCupSize: parseInt(manualCup) || 500,
-        dailyGoalMl: 0,
-    };
-
-    if (mode === 'auto') {
-        const weightNum = parseFloat(weight.replace(',', '.'));
-        if (!weightNum || isNaN(weightNum)) {
-          return Alert.alert("Erro", "Digite um peso válido.");
-        }
-        if (weightNum < MIN_WEIGHT || weightNum > MAX_WEIGHT) {
-          return Alert.alert("Erro", `Peso deve estar entre ${MIN_WEIGHT}kg e ${MAX_WEIGHT}kg.`);
-        }
-        if (weightNum > HEALTH_WARNING_WEIGHT) {
-          Alert.alert("Atenção", "Peso muito elevado, considere consultar um médico.");
-        }
-        newConfig.dailyGoalMl = weightNum * ML_PER_KG;
-    } else {
-        const goal = parseInt(manualGoal);
-        const cup = parseInt(manualCup);
-        if (!goal || goal < 500) return Alert.alert("Erro", "Meta diária muito baixa (mínimo 500ml).");
-        if (!cup || cup < 50) return Alert.alert("Erro", "Tamanho do copo inválido.");
-
-        newConfig.dailyGoalMl = goal;
-        newConfig.manualCupSize = cup;
+    if (resolvedConfig.warningMessage) {
+      Alert.alert('Atencao', resolvedConfig.warningMessage);
     }
 
     try {
-      await onSave(newConfig);
+      await onSave(resolvedConfig.value);
       onClose();
     } catch {
-      Alert.alert("Erro", "Não foi possível atualizar as configurações.");
+      Alert.alert('Erro', 'Nao foi possivel atualizar as configuracoes.');
     }
   };
 
@@ -120,68 +81,64 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
           <View style={styles.modalView}>
             <Text style={styles.modalTitle}>Configurar Jornada</Text>
 
-            {/* --- SELETOR DE MODO (TABS) --- */}
             <View style={styles.tabContainer}>
-                <TouchableOpacity 
-                    style={[styles.tabButton, mode === 'auto' && styles.tabActive]} 
-                    onPress={() => setMode('auto')}
-                >
-                    <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>🤖 Automático</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tabButton, mode === 'manual' && styles.tabActive]} 
-                    onPress={() => setMode('manual')}
-                >
-                    <Text style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>⚙️ Manual</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabButton, mode === 'auto' && styles.tabActive]}
+                onPress={() => setMode('auto')}
+              >
+                <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>Automatico</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabButton, mode === 'manual' && styles.tabActive]}
+                onPress={() => setMode('manual')}
+              >
+                <Text style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>Manual</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* CONTEÚDO DINÂMICO BASEADO NO MODO */}
-            
             {mode === 'auto' ? (
-                // --- MODO AUTO (Só pede peso) ---
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Seu Peso (kg)</Text>
-                    <TextInput
-                        style={styles.input}
-                        keyboardType="decimal-pad"
-                        value={weight}
-                        onChangeText={handleWeightChange}
-                        placeholder="Ex: 70,00"
-                    />
-                    <Text style={styles.helperText}>Meta calculada: {(parseFloat(weight.replace(',', '.') || '0') * 35).toFixed(0)} ml</Text>
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Seu Peso (kg)</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="decimal-pad"
+                  value={weight}
+                  onChangeText={(text) => setWeight(formatWeightInput(text))}
+                  placeholder="Ex: 70,00"
+                />
+                <Text style={styles.helperText}>
+                  Meta calculada: {(parseFloat(weight.replace(',', '.') || '0') * 35).toFixed(0)} ml
+                </Text>
+              </View>
             ) : (
-                // --- MODO MANUAL (Pede Meta e Copo) ---
-                <View style={styles.row}>
-                    <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                        <Text style={styles.label}>Meta Diária (ml)</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="number-pad"
-                            value={manualGoal}
-                            onChangeText={(t) => setManualGoal(formatNumber(t))}
-                            placeholder="3000"
-                        />
-                    </View>
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                        <Text style={styles.label}>Sua Garrafa (ml)</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="number-pad"
-                            value={manualCup}
-                            onChangeText={(t) => setManualCup(formatNumber(t))}
-                            placeholder="500"
-                        />
-                    </View>
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                  <Text style={styles.label}>Meta Diaria (ml)</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    value={manualGoal}
+                    onChangeText={(text) => setManualGoal(formatIntegerInput(text))}
+                    placeholder="3000"
+                  />
                 </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>Sua Garrafa (ml)</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    value={manualCup}
+                    onChangeText={(text) => setManualCup(formatIntegerInput(text))}
+                    placeholder="500"
+                  />
+                </View>
+              </View>
             )}
 
-            {/* --- CONFIGURAÇÕES COMUNS (Notificações e Horários) --- */}
             <View style={styles.divider} />
-            
+
             <View style={styles.switchContainer}>
-              <Text style={styles.label}>Lembretes de Hidratação</Text>
+              <Text style={styles.label}>Lembretes de Hidratacao</Text>
               <Switch
                 trackColor={{ false: COLORS.switchTrackOff, true: COLORS.primaryLight }}
                 thumbColor={notificationsEnabled ? COLORS.primary : COLORS.switchThumbOff}
@@ -190,43 +147,59 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               />
             </View>
 
-            {/* Horários (Só mostra se notificação estiver ativa, ou sempre, você decide. Deixei sempre visível) */}
-             <View style={styles.row}>
+            <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
                 <Text style={styles.label}>Acordar</Text>
-                <TextInput style={styles.input} value={startTime} onChangeText={setStartTime} maxLength={5} />
+                <TextInput
+                  style={styles.input}
+                  value={startTime}
+                  onChangeText={(text) => setStartTime(formatTimeInput(text))}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  placeholder="08:00"
+                />
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.label}>Dormir</Text>
-                <TextInput style={styles.input} value={endTime} onChangeText={setEndTime} maxLength={5} />
+                <TextInput
+                  style={styles.input}
+                  value={endTime}
+                  onChangeText={(text) => setEndTime(formatTimeInput(text))}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  placeholder="22:00"
+                />
               </View>
             </View>
 
-            {/* Intervalo */}
-            <Text style={[styles.label, !notificationsEnabled && { opacity: 0.5 }]}>Intervalo entre goles:</Text>
+            <Text style={[styles.label, !notificationsEnabled && styles.disabledLabel]}>Intervalo entre goles:</Text>
             <View style={styles.intervalContainer}>
-                {[30, 60].map(m => (
-                    <TouchableOpacity 
-                        key={m} 
-                        style={[styles.intervalBtn, interval === m && styles.intervalBtnSelected, !notificationsEnabled && {opacity: 0.5}]}
-                        onPress={() => notificationsEnabled && setInterval(m)}
-                        disabled={!notificationsEnabled}
-                    >
-                        <Text style={[styles.intervalText, interval === m && styles.intervalTextSelected]}>{m} min</Text>
-                    </TouchableOpacity>
-                ))}
+              {[30, 60].map((minutes) => (
+                <TouchableOpacity
+                  key={minutes}
+                  style={[
+                    styles.intervalBtn,
+                    interval === minutes && styles.intervalBtnSelected,
+                    !notificationsEnabled && styles.intervalBtnDisabled,
+                  ]}
+                  onPress={() => notificationsEnabled && setInterval(minutes)}
+                  disabled={!notificationsEnabled}
+                >
+                  <Text style={[styles.intervalText, interval === minutes && styles.intervalTextSelected]}>
+                    {minutes} min
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
-            {/* Botões Salvar/Cancelar */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
                 <Text style={styles.textStyle}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.buttonSave]} onPress={() => { void handleSave(); }}>
+              <TouchableOpacity style={[styles.button, styles.buttonSave]} onPress={() => void handleSave()}>
                 <Text style={styles.textStyle}>Salvar</Text>
               </TouchableOpacity>
             </View>
-
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -236,32 +209,64 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
 
 const styles = StyleSheet.create({
   centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalView: { width: '90%', backgroundColor: COLORS.white, borderRadius: 20, padding: 20, alignItems: 'center', ...SHADOWS.medium },
+  modalView: {
+    width: '90%',
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    ...SHADOWS.medium,
+  },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: COLORS.secondary },
-  
-  // ESTILOS DAS ABAS
-  tabContainer: { flexDirection: 'row', marginBottom: 20, backgroundColor: COLORS.surfaceLight, borderRadius: 10, padding: 4 },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 10,
+    padding: 4,
+  },
   tabButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
   tabActive: { backgroundColor: COLORS.white, ...SHADOWS.small },
   tabText: { color: COLORS.textLight, fontWeight: '600' },
   tabTextActive: { color: COLORS.primary, fontWeight: 'bold' },
-
   inputGroup: { width: '100%', marginBottom: 15 },
   row: { flexDirection: 'row', width: '100%', justifyContent: 'space-between' },
   label: { fontSize: 14, color: COLORS.textLight, marginBottom: 5, fontWeight: '600' },
-  input: { width: '100%', height: 45, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, fontSize: 16, backgroundColor: COLORS.surface },
+  disabledLabel: { opacity: 0.5 },
+  input: {
+    width: '100%',
+    height: 45,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: COLORS.surface,
+  },
   helperText: { fontSize: 12, color: COLORS.primary, marginTop: 4, textAlign: 'right' },
-  
   divider: { width: '100%', height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
-  
-  switchContainer: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  
+  switchContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   intervalContainer: { flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginBottom: 20 },
-  intervalBtn: { flex: 1, paddingVertical: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, alignItems: 'center', marginHorizontal: 5, backgroundColor: COLORS.white },
+  intervalBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 5,
+    backgroundColor: COLORS.white,
+  },
   intervalBtnSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  intervalBtnDisabled: { opacity: 0.5 },
   intervalText: { color: COLORS.textLight, fontWeight: '600' },
   intervalTextSelected: { color: 'white' },
-  
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
   button: { borderRadius: 10, padding: 12, elevation: 2, flex: 0.45, alignItems: 'center' },
   buttonSave: { backgroundColor: COLORS.primary },

@@ -28,6 +28,8 @@ import {
 import { calculateSafeGoalForRemainingWindow, isLateStartToday } from '../utils/dailyGoal';
 import { getTodayDate, timeToMinutes } from '../utils/time';
 import { buildInitialProgress, resolveOnboardingInputs } from '../utils/onboarding';
+import { formatIntegerInput, formatWeightInput } from '../utils/configValidation';
+import { ensureNotificationPermission } from '../utils/notifications';
 import * as Storage from '../services/storage';
 
 interface WelcomeScreenProps {
@@ -77,6 +79,9 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
       return Alert.alert('Ops', resolvedInputs.errorMessage);
     }
     const { weight: finalWeight, goalMl: finalGoal, cupMl: finalCup } = resolvedInputs.value;
+    if (resolvedInputs.warningMessage) {
+      Alert.alert('Atencao', resolvedInputs.warningMessage);
+    }
 
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
@@ -109,13 +114,25 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
       }
     }
 
+    let notificationsEnabled = DEFAULT_NOTIFICATIONS_ENABLED;
+    if (notificationsEnabled) {
+      const granted = await ensureNotificationPermission();
+      if (!granted) {
+        notificationsEnabled = false;
+        Alert.alert(
+          'Lembretes desativados',
+          'A permissao de notificacoes nao foi concedida. Voce pode ativar depois nas configuracoes do dispositivo.'
+        );
+      }
+    }
+
     const newConfig: UserConfig = {
       weight: finalWeight,
       startTime: DEFAULT_START_TIME,
       endTime: DEFAULT_END_TIME,
       intervalMinutes: DEFAULT_INTERVAL_MINUTES,
       dailyGoalMl: finalGoal,
-      notificationsEnabled: DEFAULT_NOTIFICATIONS_ENABLED,
+      notificationsEnabled,
       mode,
       manualCupSize: finalCup,
     };
@@ -187,7 +204,7 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
               placeholderTextColor="#999"
               keyboardType="decimal-pad"
               value={weight}
-              onChangeText={setWeight}
+              onChangeText={(text) => setWeight(formatWeightInput(text))}
               inputAccessoryViewID={inputAccessoryViewID}
             />
             {weight.length > 0 && (
@@ -209,7 +226,7 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
               placeholderTextColor="#999"
               keyboardType="number-pad"
               value={manualGoal}
-              onChangeText={setManualGoal}
+              onChangeText={(text) => setManualGoal(formatIntegerInput(text))}
               inputAccessoryViewID={inputAccessoryViewID}
             />
 
@@ -221,7 +238,7 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
               placeholderTextColor="#999"
               keyboardType="number-pad"
               value={manualCup}
-              onChangeText={setManualCup}
+              onChangeText={(text) => setManualCup(formatIntegerInput(text))}
               inputAccessoryViewID={inputAccessoryViewID}
             />
           </View>

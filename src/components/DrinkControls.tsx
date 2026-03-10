@@ -9,10 +9,11 @@ interface DrinkControlsProps {
   onUndo: () => void;
   onReset: () => void;
   drinkSize: number;
+  goalReached: boolean;
   hasHistory: boolean;
 }
 
-function DrinkControls({ onDrink, onUndo, onReset, drinkSize, hasHistory }: DrinkControlsProps) {
+function DrinkControls({ onDrink, onUndo, onReset, drinkSize, goalReached, hasHistory }: DrinkControlsProps) {
   return (
     <View style={styles.container}>
       
@@ -20,19 +21,20 @@ function DrinkControls({ onDrink, onUndo, onReset, drinkSize, hasHistory }: Drin
       <TouchableOpacity
         onPress={onDrink}
         activeOpacity={0.8}
-        style={styles.shadowContainer}
+        style={[styles.shadowContainer, goalReached && styles.shadowContainerDisabled]}
         accessibilityLabel={drinkSize > 0 ? `Beber ${drinkSize} mililitros de água` : 'Meta de hidratação atingida'}
         accessibilityRole="button"
-        accessibilityHint="Toque para registrar consumo de água"
+        accessibilityHint={goalReached ? 'Meta do dia concluida' : 'Toque para registrar consumo de água'}
+        disabled={goalReached}
       >
         <LinearGradient
-          colors={[COLORS.primary, COLORS.primaryLight]}
+          colors={goalReached ? [COLORS.textLight, COLORS.textLight] : [COLORS.primary, COLORS.primaryLight]}
           style={styles.mainButton}
         >
           <Text style={styles.mainButtonText}>
             {drinkSize > 0 ? `+ ${drinkSize} ml` : "Meta Batida!"}
           </Text>
-          <Text style={styles.subText}>Beber Agora</Text>
+          <Text style={styles.subText}>{goalReached ? 'Objetivo concluido' : 'Beber Agora'}</Text>
         </LinearGradient>
       </TouchableOpacity>
 
@@ -82,6 +84,10 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     marginBottom: 25,
+  },
+  shadowContainerDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
 
   // Estilo restaurado: Botão largo e arredondado (Pílula), não círculo gigante

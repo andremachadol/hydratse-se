@@ -1,4 +1,11 @@
-import type { CalculationMode, DayProgress } from '../types';
+import type { CalculationMode, DayProgress } from '../types/index.ts';
+import {
+  DEFAULT_END_TIME,
+  DEFAULT_INTERVAL_MINUTES,
+  DEFAULT_NOTIFICATIONS_ENABLED,
+  DEFAULT_START_TIME,
+} from '../constants/config.ts';
+import { resolveUserConfigForm } from './configValidation.ts';
 
 type OnboardingResolved = {
   weight: number;
@@ -7,7 +14,7 @@ type OnboardingResolved = {
 };
 
 type OnboardingResult =
-  | { ok: true; value: OnboardingResolved }
+  | { ok: true; value: OnboardingResolved; warningMessage?: string }
   | { ok: false; errorMessage: string };
 
 type OnboardingConstraints = {
@@ -24,41 +31,35 @@ export const resolveOnboardingInputs = (
   constraints: OnboardingConstraints
 ): OnboardingResult => {
   if (mode === 'auto') {
-    const weight = parseFloat(weightInput.replace(',', '.'));
-    if (!weight || weight < constraints.minWeight || weight > constraints.maxWeight) {
+    const parsedWeight = Number.parseFloat(weightInput.replace(',', '.'));
+    if (!Number.isFinite(parsedWeight) || parsedWeight < constraints.minWeight || parsedWeight > constraints.maxWeight) {
       return { ok: false, errorMessage: 'Informe um peso valido (kg).' };
     }
-
-    return {
-      ok: true,
-      value: {
-        weight,
-        goalMl: weight * mlPerKg,
-        cupMl: 500,
-      },
-    };
   }
 
-  const cleanGoal = manualGoalInput.replace(/[^0-9]/g, '');
-  const cleanCup = manualCupInput.replace(/[^0-9]/g, '');
+  const result = resolveUserConfigForm({
+    mode,
+    weightInput,
+    manualGoalInput,
+    manualCupInput,
+    startTime: DEFAULT_START_TIME,
+    endTime: DEFAULT_END_TIME,
+    intervalMinutes: DEFAULT_INTERVAL_MINUTES,
+    notificationsEnabled: DEFAULT_NOTIFICATIONS_ENABLED,
+  });
 
-  const goalMl = parseInt(cleanGoal, 10);
-  const cupMl = parseInt(cleanCup, 10);
-
-  if (!goalMl || goalMl < 500) {
-    return { ok: false, errorMessage: 'Meta minima: 500ml.' };
-  }
-  if (!cupMl || cupMl < 50) {
-    return { ok: false, errorMessage: 'Copo invalido.' };
+  if (!result.ok) {
+    return result;
   }
 
   return {
     ok: true,
     value: {
-      weight: 70,
-      goalMl,
-      cupMl,
+      weight: result.value.weight,
+      goalMl: result.value.mode === 'auto' ? result.value.weight * mlPerKg : result.value.dailyGoalMl,
+      cupMl: result.value.manualCupSize,
     },
+    warningMessage: result.warningMessage,
   };
 };
 

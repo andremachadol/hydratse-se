@@ -28,7 +28,7 @@ const manualConfig: UserConfig = {
 test('calculateNextDrinkAmount no modo manual respeita copo e restante', () => {
   assert.equal(calculateNextDrinkAmount(manualConfig, 1000, 2000), 500);
   assert.equal(calculateNextDrinkAmount(manualConfig, 1900, 2000), 100);
-  assert.equal(calculateNextDrinkAmount(manualConfig, 2200, 2000), 500);
+  assert.equal(calculateNextDrinkAmount(manualConfig, 2200, 2000), 0);
 });
 
 test('calculateNextDrinkAmount no modo auto usa slots da janela', () => {

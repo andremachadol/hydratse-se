@@ -1,57 +1,16 @@
-// src/services/storage.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserConfig, DayProgress } from '../types';
+import type { DayProgress, UserConfig } from '../types/index.ts';
+import { parseStoredUserConfig } from '../utils/configValidation.ts';
+import { parseStoredProgress, wrapStoredValue } from '../utils/storageValidation.ts';
 
-// Chaves centralizadas
 const STORAGE_KEYS = {
   CONFIG: '@config',
   PROGRESS: '@progress',
 } as const;
 
-const isValidDayHistoryEntry = (data: unknown): boolean => {
-  if (!data || typeof data !== 'object') return false;
-  const d = data as Record<string, unknown>;
-  return typeof d.date === 'string' && typeof d.consumedMl === 'number';
-};
-
-// Validadores de schema
-const isValidProgress = (data: unknown): data is DayProgress => {
-  if (!data || typeof data !== 'object') return false;
-  const d = data as Record<string, unknown>;
-  const history = d.dayHistory;
-  const bestDay = d.bestDay;
-
-  return (
-    typeof d.consumedMl === 'number' &&
-    Array.isArray(d.drinks) &&
-    typeof d.streak === 'number' &&
-    typeof d.lastDrinkDate === 'string' &&
-    (history === undefined || (Array.isArray(history) && history.every(isValidDayHistoryEntry))) &&
-    (bestDay === undefined || isValidDayHistoryEntry(bestDay)) &&
-    (d.goalOverrideMl === undefined || typeof d.goalOverrideMl === 'number') &&
-    (d.goalOverrideDate === undefined || typeof d.goalOverrideDate === 'string')
-  );
-};
-
-const isValidConfig = (data: unknown): data is Partial<UserConfig> => {
-  if (!data || typeof data !== 'object') return false;
-  const d = data as Record<string, unknown>;
-  return (
-    (d.weight === undefined || typeof d.weight === 'number') &&
-    (d.startTime === undefined || typeof d.startTime === 'string') &&
-    (d.endTime === undefined || typeof d.endTime === 'string') &&
-    (d.intervalMinutes === undefined || typeof d.intervalMinutes === 'number') &&
-    (d.dailyGoalMl === undefined || typeof d.dailyGoalMl === 'number') &&
-    (d.notificationsEnabled === undefined || typeof d.notificationsEnabled === 'boolean') &&
-    (d.mode === undefined || d.mode === 'auto' || d.mode === 'manual') &&
-    (d.manualCupSize === undefined || typeof d.manualCupSize === 'number')
-  );
-};
-
-// Salvar configuração
 export const saveConfig = async (config: UserConfig): Promise<boolean> => {
   try {
-    await AsyncStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
+    await AsyncStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(wrapStoredValue(config)));
     return true;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -60,17 +19,18 @@ export const saveConfig = async (config: UserConfig): Promise<boolean> => {
   }
 };
 
-// Carregar configuração
 export const loadConfig = async (): Promise<Partial<UserConfig> | null> => {
   try {
     const saved = await AsyncStorage.getItem(STORAGE_KEYS.CONFIG);
     if (!saved) return null;
 
     const parsed: unknown = JSON.parse(saved);
-    if (isValidConfig(parsed)) {
-      return parsed;
+    const validConfig = parseStoredUserConfig(parsed);
+    if (validConfig) {
+      return validConfig;
     }
-    console.warn('Config com formato inválido');
+
+    console.warn('Config com formato invalido');
     return null;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -79,10 +39,9 @@ export const loadConfig = async (): Promise<Partial<UserConfig> | null> => {
   }
 };
 
-// Salvar progresso
 export const saveProgress = async (progress: DayProgress): Promise<boolean> => {
   try {
-    await AsyncStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+    await AsyncStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(wrapStoredValue(progress)));
     return true;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -91,17 +50,18 @@ export const saveProgress = async (progress: DayProgress): Promise<boolean> => {
   }
 };
 
-// Carregar progresso
 export const loadProgress = async (): Promise<DayProgress | null> => {
   try {
     const saved = await AsyncStorage.getItem(STORAGE_KEYS.PROGRESS);
     if (!saved) return null;
 
     const parsed: unknown = JSON.parse(saved);
-    if (isValidProgress(parsed)) {
-      return parsed;
+    const validProgress = parseStoredProgress(parsed);
+    if (validProgress) {
+      return validProgress;
     }
-    console.warn('Progress com formato inválido');
+
+    console.warn('Progress com formato invalido');
     return null;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -110,7 +70,6 @@ export const loadProgress = async (): Promise<DayProgress | null> => {
   }
 };
 
-// Limpar todos os dados (útil para debug/reset)
 export const clearAllData = async (): Promise<boolean> => {
   try {
     await AsyncStorage.multiRemove([STORAGE_KEYS.CONFIG, STORAGE_KEYS.PROGRESS]);

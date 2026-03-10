@@ -1,6 +1,6 @@
 # Hidrate-se
 
-App mobile de hidratacao diaria com onboarding simples, meta automatica/manual, historico local e lembretes por notificacao local. O projeto e 100% client-side: nao depende de backend e persiste os dados do usuario no dispositivo com AsyncStorage.
+App mobile de hidratação diária com onboarding simples, meta automática/manual, histórico local e lembretes por notificação local. O projeto é 100% client-side: não depende de backend e persiste os dados do usuário no dispositivo com AsyncStorage.
 
 ## Stack
 - Expo SDK 54
@@ -14,37 +14,37 @@ App mobile de hidratacao diaria com onboarding simples, meta automatica/manual, 
 - `react-native-svg`
 
 ## Fluxo do app
-1. `App.tsx` exibe a splash e verifica se ja existe configuracao valida salva.
-2. Sem configuracao, o usuario passa pelo onboarding em `WelcomeScreen.tsx`.
-3. Com configuracao valida, o app abre direto em `HomeScreen.tsx`.
-4. O hook `useWaterTracker.ts` centraliza estado, persistencia, normalizacao da virada do dia e sincronizacao das notificacoes.
+1. `App.tsx` exibe a splash e verifica se já existe configuração válida salva.
+2. Sem configuração, o usuário passa pelo onboarding em `WelcomeScreen.tsx`.
+3. Com configuração válida, o app abre direto em `HomeScreen.tsx`.
+4. O hook `useWaterTracker.ts` centraliza estado, persistência, normalização da virada do dia e sincronização das notificações.
 
 ## Funcionalidades atuais
-- Meta automatica por peso (`35 ml/kg`) ou meta manual
-- Controle diario com registro de goles
-- Streak diaria
-- Historico de dias com filtro `7`, `14` e `30`
+- Meta automática por peso (`35 ml/kg`) ou meta manual
+- Controle diário com registro de goles
+- Sequência diária
+- Histórico de dias com filtro `7`, `14` e `30`
 - Melhor dia registrado
 - Anel de progresso
-- Splash animada com audio
-- Configuracao de janela de hidratacao e intervalo de lembretes
-- Desfazer ultimo gole e zerar o dia
+- Splash animada com áudio
+- Configuração de janela de hidratação e intervalo de lembretes
+- Desfazer último gole e zerar o dia
 
-## Regras de notificacao
-- Janela configuravel com `startTime` ate `endTime`
+## Regras de notificação
+- Janela configurável com `startTime` até `endTime`
 - Intervalo de `30` ou `60` minutos
-- Slots comecam no `startTime`
-- Agendamento por `DATE` para hoje e amanha
-- Ao bater a meta, cancela apenas as notificacoes de hoje
-- As notificacoes de amanha continuam agendadas
-- Ao desativar notificacoes, o app remove todos os lembretes gerenciados por ele
+- Slots começam no `startTime`
+- Agendamento por `DATE` para hoje e amanhã
+- Ao bater a meta, cancela apenas as notificações de hoje
+- As notificações de amanhã continuam agendadas
+- Ao desativar notificações, o app remove todos os lembretes gerenciados por ele
 
-## Inicio tardio no onboarding
-Se o usuario finalizar a configuracao no meio da janela diaria, o app oferece duas opcoes:
+## Início tardio no onboarding
+Se o usuário finalizar a configuração no meio da janela diária, o app oferece duas opções:
 1. Manter a meta normal
-2. Ajustar somente a meta de hoje por seguranca
+2. Ajustar somente a meta de hoje por segurança
 
-Esse ajuste vira um override diario e expira automaticamente no dia seguinte.
+Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 
 ## Estrutura
 ```text
@@ -103,9 +103,9 @@ Esse ajuste vira um override diario e expira automaticamente no dia seguinte.
 ### Requisitos
 - Node.js com suporte a `--experimental-strip-types`
 - npm
-- Emulador Android/iOS ou dispositivo fisico
+- Emulador Android/iOS ou dispositivo físico
 
-### Instalar dependencias
+### Instalar dependências
 ```bash
 npm install
 ```
@@ -115,7 +115,7 @@ npm install
 npm run start
 ```
 
-Scripts disponiveis:
+Scripts disponíveis:
 - `npm run start`
 - `npm run android`
 - `npm run ios`
@@ -151,12 +151,12 @@ npm run check
 # Android preview (APK)
 eas build --platform android --profile preview
 
-# Producao
+# Produção
 eas build --platform android --profile production
 ```
 
 ## Releases
-- Fluxo baseado em commits e tags semanticas `vMAJOR.MINOR.PATCH`
+- Fluxo baseado em commits e tags semânticas `vMAJOR.MINOR.PATCH`
 - Script de release:
   - `npm run release:patch`
   - `npm run release:minor`
@@ -164,5 +164,5 @@ eas build --platform android --profile production
 - O script atualiza `CHANGELOG.md`, `package.json`, `package-lock.json` e `app.json`
 - Guia complementar: `RELEASES.md`
 
-## Licenca
+## Licença
 MIT

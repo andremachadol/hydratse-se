@@ -2,13 +2,15 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDateWithOffset, timeToMinutes } from './time';
 import { buildReminderSlots, getUpcomingSlotsForToday } from './reminderSlots';
-import { UserConfig } from '../types';
+import type { UserConfig } from '../types';
 
 type ReminderConfig = Pick<UserConfig, 'startTime' | 'endTime' | 'intervalMinutes'>;
 type ReminderIdsByDate = Record<string, string[]>;
 
 const STORAGE_KEY_REMINDER_IDS = '@hydration_reminder_ids_by_date';
 const HYDRATION_REMINDER_TYPE = 'hydration_reminder';
+
+export type NotificationPermissionState = 'granted' | 'denied' | 'undetermined';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -20,17 +22,36 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export const requestNotificationPermission = async (): Promise<boolean> => {
+const normalizePermissionState = (status: string): NotificationPermissionState => {
+  if (status === 'granted') return 'granted';
+  if (status === 'denied') return 'denied';
+  return 'undetermined';
+};
+
+export const getNotificationPermissionState = async (): Promise<NotificationPermissionState> => {
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    return normalizePermissionState(existingStatus);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to read notification permission:', message);
+    return 'denied';
+  }
+};
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+export const hasNotificationPermission = async (): Promise<boolean> => {
+  return (await getNotificationPermissionState()) === 'granted';
+};
+
+export const ensureNotificationPermission = async (): Promise<boolean> => {
+  try {
+    const currentState = await getNotificationPermissionState();
+    if (currentState === 'granted') {
+      return true;
     }
 
-    return finalStatus === 'granted';
+    const { status } = await Notifications.requestPermissionsAsync();
+    return normalizePermissionState(status) === 'granted';
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Failed to request notification permission:', message);
@@ -93,7 +114,7 @@ export const cancelAllHydrationReminders = async (): Promise<void> => {
  */
 export const scheduleHydrationReminders = async (config?: ReminderConfig): Promise<boolean> => {
   try {
-    const hasPermission = await requestNotificationPermission();
+    const hasPermission = await hasNotificationPermission();
     if (!hasPermission) {
       console.warn('Notification permission not granted');
       return false;
