@@ -93,7 +93,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
     Alert.alert(
       'Lembretes desativados',
-      'A permissao de notificacoes nao foi concedida. Voce pode ativar depois nas configuracoes do dispositivo.'
+      'A permissão de notificações não foi concedida. Você pode ativar depois nas configurações do dispositivo.'
     );
 
     return {
@@ -111,7 +111,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     const saved = await Storage.saveConfig(updatedConfig);
     if (!saved) {
       setConfig(previousConfig);
-      Alert.alert('Erro', 'Nao foi possivel salvar as configuracoes.');
+      Alert.alert('Erro', 'Não foi possível salvar as configurações.');
       return;
     }
 
@@ -144,15 +144,15 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
     if (result.reachedGoalToday) {
       Logger.goalReached(result.newProgress.consumedMl, result.activeGoalMl);
-      Alert.alert('Meta batida!', 'Voce atingiu 100% da sua hidratacao hoje.');
+      Alert.alert('Meta batida!', 'Você atingiu 100% da sua hidratação hoje.');
     }
 
     if (result.bestDayEvent) {
       Alert.alert(
-        result.bestDayEvent.kind === 'surpassed' ? 'Novo melhor dia!' : 'Melhor dia alcancado!',
+        result.bestDayEvent.kind === 'surpassed' ? 'Novo melhor dia!' : 'Melhor dia igualado!',
         result.bestDayEvent.kind === 'surpassed'
-          ? `Voce bateu seu recorde com ${result.newProgress.consumedMl}ml hoje.`
-          : `Voce igualou seu recorde de ${result.bestDayEvent.previousBestDay.consumedMl}ml.`
+          ? `Você bateu seu recorde com ${result.newProgress.consumedMl} ml hoje.`
+          : `Você igualou seu recorde de ${result.bestDayEvent.previousBestDay.consumedMl} ml.`
       );
     }
 
@@ -182,12 +182,12 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     };
 
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Reiniciar o dia?');
+      const confirmed = window.confirm('Zerar o dia?');
       if (confirmed) await doReset();
       return;
     }
 
-    Alert.alert('Reiniciar o dia?', 'O historico de hoje sera apagado.', [
+    Alert.alert('Zerar o dia?', 'O histórico de hoje será apagado.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Sim, zerar', style: 'destructive', onPress: () => void doReset() },
     ]);

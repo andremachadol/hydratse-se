@@ -122,7 +122,7 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
           </View>
           <View style={styles.reflection} />
         </View>
-        <Text style={styles.loadingText}>Hidratando o sistema...</Text>
+        <Text style={styles.loadingText}>Preparando sua rotina de hidratação...</Text>
       </LinearGradient>
     </Animated.View>
   );

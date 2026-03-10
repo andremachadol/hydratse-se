@@ -38,7 +38,7 @@ export const getYesterdayDate = (): string => {
 };
 
 /**
- * Retorna data local com deslocamento em dias (0 = hoje, 1 = amanhÃ£)
+ * Retorna data local com deslocamento em dias (0 = hoje, 1 = amanhã)
  */
 export const getDateWithOffset = (offsetDays: number): string => {
   const date = new Date();

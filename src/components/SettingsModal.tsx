@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import type { CalculationMode, UserConfig } from '../types';
@@ -23,6 +24,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ visible, onClose, onSave, currentConfig }: SettingsModalProps) {
+  const { width } = useWindowDimensions();
   const [mode, setMode] = useState<CalculationMode>('auto');
   const [weight, setWeight] = useState('');
   const [manualGoal, setManualGoal] = useState('');
@@ -63,30 +65,32 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
     }
 
     if (resolvedConfig.warningMessage) {
-      Alert.alert('Atencao', resolvedConfig.warningMessage);
+      Alert.alert('Atenção', resolvedConfig.warningMessage);
     }
 
     try {
       await onSave(resolvedConfig.value);
       onClose();
     } catch {
-      Alert.alert('Erro', 'Nao foi possivel atualizar as configuracoes.');
+      Alert.alert('Erro', 'Não foi possível atualizar as configurações.');
     }
   };
+
+  const modalWidth = Math.min(width - 24, width >= 840 ? 560 : 420);
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>Configurar Jornada</Text>
+          <View style={[styles.modalView, { width: modalWidth }]}>
+            <Text style={styles.modalTitle}>Ajustar rotina</Text>
 
             <View style={styles.tabContainer}>
               <TouchableOpacity
                 style={[styles.tabButton, mode === 'auto' && styles.tabActive]}
                 onPress={() => setMode('auto')}
               >
-                <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>Automatico</Text>
+                <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>Automático</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabButton, mode === 'manual' && styles.tabActive]}
@@ -113,7 +117,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
             ) : (
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                  <Text style={styles.label}>Meta Diaria (ml)</Text>
+                  <Text style={styles.label}>Meta diária (ml)</Text>
                   <TextInput
                     style={styles.input}
                     keyboardType="number-pad"
@@ -138,7 +142,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
             <View style={styles.divider} />
 
             <View style={styles.switchContainer}>
-              <Text style={styles.label}>Lembretes de Hidratacao</Text>
+              <Text style={styles.label}>Lembretes de hidratação</Text>
               <Switch
                 trackColor={{ false: COLORS.switchTrackOff, true: COLORS.primaryLight }}
                 thumbColor={notificationsEnabled ? COLORS.primary : COLORS.switchThumbOff}
@@ -149,7 +153,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
 
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.label}>Acordar</Text>
+                <Text style={styles.label}>Início do dia</Text>
                 <TextInput
                   style={styles.input}
                   value={startTime}
@@ -160,7 +164,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
                 />
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Dormir</Text>
+                <Text style={styles.label}>Fim do dia</Text>
                 <TextInput
                   style={styles.input}
                   value={endTime}
@@ -172,7 +176,7 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               </View>
             </View>
 
-            <Text style={[styles.label, !notificationsEnabled && styles.disabledLabel]}>Intervalo entre goles:</Text>
+            <Text style={[styles.label, !notificationsEnabled && styles.disabledLabel]}>Intervalo entre lembretes</Text>
             <View style={styles.intervalContainer}>
               {[30, 60].map((minutes) => (
                 <TouchableOpacity
@@ -210,7 +214,6 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
 const styles = StyleSheet.create({
   centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalView: {
-    width: '90%',
     backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 20,
