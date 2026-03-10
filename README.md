@@ -1,90 +1,111 @@
 # Hidrate-se
 
-App mobile para acompanhamento de hidratacao diaria, com foco em rotina real, lembretes locais e UX simples.
+App mobile de hidratacao diaria com onboarding simples, meta automatica/manual, historico local e lembretes por notificacao local. O projeto e 100% client-side: nao depende de backend e persiste os dados do usuario no dispositivo com AsyncStorage.
 
 ## Stack
 - Expo SDK 54
 - React Native 0.81
 - React 19
-- TypeScript (strict)
+- TypeScript (`strict`)
 - AsyncStorage
-- expo-notifications
-- react-native-svg
-- expo-linear-gradient
-- expo-av
+- `expo-notifications`
+- `expo-linear-gradient`
+- `expo-av`
+- `react-native-svg`
 
-## Funcionalidades
+## Fluxo do app
+1. `App.tsx` exibe a splash e verifica se ja existe configuracao valida salva.
+2. Sem configuracao, o usuario passa pelo onboarding em `WelcomeScreen.tsx`.
+3. Com configuracao valida, o app abre direto em `HomeScreen.tsx`.
+4. O hook `useWaterTracker.ts` centraliza estado, persistencia, normalizacao da virada do dia e sincronizacao das notificacoes.
+
+## Funcionalidades atuais
 - Meta automatica por peso (`35 ml/kg`) ou meta manual
-- Controle de consumo diario com historico de goles
-- Streak diario (sequencia de dias)
+- Controle diario com registro de goles
+- Streak diaria
+- Historico de dias com filtro `7`, `14` e `30`
+- Melhor dia registrado
 - Anel de progresso
 - Splash animada com audio
-- Notificacoes locais com janela configuravel
+- Configuracao de janela de hidratacao e intervalo de lembretes
+- Desfazer ultimo gole e zerar o dia
 
-## Regras de notificacao (atual)
-- Janela do usuario: `startTime` ate `endTime`
-- Intervalo: `30` ou `60` minutos
-- Slots comecam no `startTime` (nao perde a primeira janela)
+## Regras de notificacao
+- Janela configuravel com `startTime` ate `endTime`
+- Intervalo de `30` ou `60` minutos
+- Slots comecam no `startTime`
 - Agendamento por `DATE` para hoje e amanha
-- Ao bater meta: cancela somente notificacoes de hoje
-- Amanhana continua garantido mesmo sem abrir o app
-- Se notificacoes forem desativadas: remove todas as notificacoes de hidratacao gerenciadas pelo app
+- Ao bater a meta, cancela apenas as notificacoes de hoje
+- As notificacoes de amanha continuam agendadas
+- Ao desativar notificacoes, o app remove todos os lembretes gerenciados por ele
 
 ## Inicio tardio no onboarding
-- Se o usuario configurar no meio da janela diaria, o app oferece duas opcoes:
-1. Manter meta normal
+Se o usuario finalizar a configuracao no meio da janela diaria, o app oferece duas opcoes:
+1. Manter a meta normal
 2. Ajustar somente a meta de hoje por seguranca
-- Esse ajuste vira um override diario e expira automaticamente no dia seguinte
+
+Esse ajuste vira um override diario e expira automaticamente no dia seguinte.
 
 ## Estrutura
 ```text
-src/
-  components/
-    DrinkControls.tsx
-    ErrorBoundary.tsx
-    HydrationTips.tsx
-    ProgressRing.tsx
-    SettingsModal.tsx
-    SplashAnimation.tsx
-    WelcomeModeCard.tsx
-  constants/
-    config.ts
-    theme.ts
-  hooks/
-    useWaterTracker.ts
-  screens/
-    HomeScreen.tsx
-    WelcomeScreen.tsx
-  services/
-    hydrationNotifications.ts
-    logger.ts
-    storage.ts
-  types/
-    index.ts
-  utils/
-    dailyGoal.ts
-    notifications.ts
-    onboarding.ts
-    progress.ts
-    reminderSlots.ts
-    time.ts
-    waterTrackerDomain.ts
-tests/
-  dailyGoal.test.ts
-  notifications.test.ts
-  onboarding.test.ts
-  progress.test.ts
-  waterTrackerDomain.test.ts
+.
+|-- App.tsx
+|-- index.js
+|-- app.json
+|-- eas.json
+|-- scripts/
+|   `-- release.js
+|-- src/
+|   |-- components/
+|   |   |-- DrinkControls.tsx
+|   |   |-- ErrorBoundary.tsx
+|   |   |-- HydrationTips.tsx
+|   |   |-- ProgressRing.tsx
+|   |   |-- SettingsModal.tsx
+|   |   |-- SplashAnimation.tsx
+|   |   `-- WelcomeModeCard.tsx
+|   |-- constants/
+|   |   |-- config.ts
+|   |   `-- theme.ts
+|   |-- hooks/
+|   |   `-- useWaterTracker.ts
+|   |-- screens/
+|   |   |-- HomeScreen.tsx
+|   |   `-- WelcomeScreen.tsx
+|   |-- services/
+|   |   |-- hydrationNotifications.ts
+|   |   |-- logger.ts
+|   |   `-- storage.ts
+|   |-- types/
+|   |   `-- index.ts
+|   `-- utils/
+|       |-- configValidation.ts
+|       |-- dailyGoal.ts
+|       |-- dayHistory.ts
+|       |-- notifications.ts
+|       |-- onboarding.ts
+|       |-- progress.ts
+|       |-- reminderSlots.ts
+|       |-- time.ts
+|       `-- waterTrackerDomain.ts
+`-- tests/
+    |-- configValidation.test.ts
+    |-- dailyGoal.test.ts
+    |-- dayHistory.test.ts
+    |-- notifications.test.ts
+    |-- onboarding.test.ts
+    |-- progress.test.ts
+    `-- waterTrackerDomain.test.ts
 ```
 
 ## Como rodar
 
 ### Requisitos
-- Node.js 18+
+- Node.js com suporte a `--experimental-strip-types`
 - npm
-- Emulador Android/iOS (Android Studio/Xcode) ou dispositivo fisico
+- Emulador Android/iOS ou dispositivo fisico
 
-### Instalar
+### Instalar dependencias
 ```bash
 npm install
 ```
@@ -100,10 +121,12 @@ Scripts disponiveis:
 - `npm run ios`
 - `npm run web`
 - `npm run typecheck`
+- `npm run test`
+- `npm run test:watch`
 - `npm run check`
 
 ## Testes
-Este projeto usa o test runner nativo do Node com TypeScript via `--experimental-strip-types`.
+O projeto usa o test runner nativo do Node com TypeScript via `--experimental-strip-types`.
 
 ```bash
 npm run test
@@ -119,7 +142,7 @@ npm run test:watch
 # Tipagem
 npm run typecheck
 
-# Checagem completa (tipagem + testes)
+# Tipagem + testes
 npm run check
 ```
 
@@ -132,14 +155,14 @@ eas build --platform android --profile preview
 eas build --platform android --profile production
 ```
 
-## Versionamento e releases
-- Fluxo baseado em commits e tags semanticas (`vMAJOR.MINOR.PATCH`)
-- Scripts:
+## Releases
+- Fluxo baseado em commits e tags semanticas `vMAJOR.MINOR.PATCH`
+- Script de release:
   - `npm run release:patch`
   - `npm run release:minor`
   - `npm run release:major`
-- Guia completo:
-  - `RELEASES.md`
+- O script atualiza `CHANGELOG.md`, `package.json`, `package-lock.json` e `app.json`
+- Guia complementar: `RELEASES.md`
 
 ## Licenca
 MIT
