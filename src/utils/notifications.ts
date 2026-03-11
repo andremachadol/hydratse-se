@@ -152,7 +152,8 @@ export const scheduleHydrationReminders = async (config?: ReminderConfig): Promi
       date.setDate(date.getDate() + dayOffset);
 
       const dateKey = dayOffset === 0 ? todayKey : tomorrowKey;
-      const slots = dayOffset === 0 ? getUpcomingSlotsForToday(scheduleTimes, nowMins) : scheduleTimes;
+      const slots =
+        dayOffset === 0 ? getUpcomingSlotsForToday(scheduleTimes, nowMins) : scheduleTimes;
 
       for (const slotMins of slots) {
         const triggerDate = new Date(date);

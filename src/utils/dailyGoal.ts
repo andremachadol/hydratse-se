@@ -5,7 +5,7 @@ const SAFE_ROUNDING_STEP_ML = 50;
 export const resolveEffectiveDailyGoal = (
   baseDailyGoalMl: number,
   progress: DayProgress,
-  today: string
+  today: string,
 ): number => {
   if (
     progress.goalOverrideDate === today &&
@@ -26,7 +26,7 @@ export const calculateSafeGoalForRemainingWindow = (
   baseDailyGoalMl: number,
   nowMins: number,
   endMins: number,
-  safeMaxMlPerHour: number
+  safeMaxMlPerHour: number,
 ): number => {
   const remainingMinutes = Math.max(0, endMins - nowMins);
   const safeMaxMl = Math.floor((remainingMinutes / 60) * safeMaxMlPerHour);

@@ -1,11 +1,15 @@
 import type { UserConfig } from '../types/index.ts';
-import { cancelAllHydrationReminders, cancelHydrationRemindersForToday, scheduleHydrationReminders } from '../utils/notifications.ts';
+import {
+  cancelAllHydrationReminders,
+  cancelHydrationRemindersForToday,
+  scheduleHydrationReminders,
+} from '../utils/notifications.ts';
 import { Logger } from './logger.ts';
 
 export const syncHydrationNotifications = async (
   currentProgressMl: number,
   currentGoalMl: number,
-  currentConfig: UserConfig
+  currentConfig: UserConfig,
 ): Promise<void> => {
   try {
     if (!currentConfig.notificationsEnabled) {

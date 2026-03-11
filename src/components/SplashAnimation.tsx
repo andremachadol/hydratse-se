@@ -1,9 +1,9 @@
 // src/components/SplashAnimation.tsx
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Audio } from 'expo-av';
-import { COLORS } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS } from '../constants/theme';
 
 const MIN_SPLASH_MS = 1500;
 
@@ -25,13 +25,11 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
-  // Completa o enchimento rapidamente e faz fade-out
-  const triggerFadeOut = () => {
+  const triggerFadeOut = useCallback(() => {
     if (hasTriggeredFadeOut.current) return;
     hasTriggeredFadeOut.current = true;
 
     fillAnim.stopAnimation();
-    // Completa o enchimento restante em 300ms
     Animated.timing(fillAnim, {
       toValue: 1,
       duration: 300,
@@ -47,18 +45,26 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
         onFinishRef.current();
       });
     });
-  };
+  }, [fadeAnim, fillAnim]);
 
-  // Quando loading termina, verifica se já pode sair
+  const loadAndPlaySound = useCallback(async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(require('../../assets/sounds/filling.mp3'));
+      soundRef.current = sound;
+      await sound.playAsync();
+    } catch {
+      // Falha no som nao impede a animacao.
+    }
+  }, []);
+
   useEffect(() => {
     dataReady.current = !isLoading;
     if (!isLoading && minTimeReached.current) {
       triggerFadeOut();
     }
-  }, [isLoading]);
+  }, [isLoading, triggerFadeOut]);
 
   useEffect(() => {
-    // Animação de enchimento (dura até 3s, mas pode ser interrompida antes)
     Animated.timing(fillAnim, {
       toValue: 1,
       duration: 3000,
@@ -66,10 +72,8 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
       easing: Easing.out(Easing.ease),
     }).start();
 
-    // Carrega e toca o som em paralelo (não bloqueia a animação)
-    loadAndPlaySound();
+    void loadAndPlaySound();
 
-    // Após o tempo mínimo, verifica se os dados já carregaram
     const minTimer = setTimeout(() => {
       minTimeReached.current = true;
       if (dataReady.current) {
@@ -87,19 +91,7 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
         });
       }
     };
-  }, []);
-
-  const loadAndPlaySound = async () => {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('../../assets/sounds/filling.mp3')
-      );
-      soundRef.current = sound;
-      await sound.playAsync();
-    } catch {
-      // Falha no som não impede a animação
-    }
-  };
+  }, [fadeAnim, fillAnim, loadAndPlaySound, triggerFadeOut]);
 
   const waterHeight = fillAnim.interpolate({
     inputRange: [0, 1],
@@ -112,17 +104,12 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
         <View style={styles.cupContainer}>
           <View style={styles.cupOutline}>
             <View style={styles.waterContainer}>
-              <Animated.View
-                style={[
-                  styles.water,
-                  { height: waterHeight }
-                ]}
-              />
+              <Animated.View style={[styles.water, { height: waterHeight }]} />
             </View>
           </View>
           <View style={styles.reflection} />
         </View>
-        <Text style={styles.loadingText}>Preparando sua rotina de hidratação...</Text>
+        <Text style={styles.loadingText}>Preparando sua rotina de hidratacao...</Text>
       </LinearGradient>
     </Animated.View>
   );
@@ -180,5 +167,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 20,
     opacity: 0.8,
-  }
+  },
 });

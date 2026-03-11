@@ -18,7 +18,11 @@ const formatLog = (entry: LogEntry): string => {
   return prefix;
 };
 
-const createLogEntry = (level: LogLevel, action: string, data?: Record<string, unknown>): LogEntry => ({
+const createLogEntry = (
+  level: LogLevel,
+  action: string,
+  data?: Record<string, unknown>,
+): LogEntry => ({
   timestamp: new Date().toISOString(),
   level,
   action,
@@ -51,7 +55,12 @@ export const Logger = {
 
   // Ações específicas do app
   drink: (amount: number, total: number, goal: number) => {
-    Logger.info('DRINK_ADDED', { amount, total, goal, percentage: Math.round((total / goal) * 100) });
+    Logger.info('DRINK_ADDED', {
+      amount,
+      total,
+      goal,
+      percentage: Math.round((total / goal) * 100),
+    });
   },
 
   undo: (amount: number, newTotal: number) => {

@@ -4,8 +4,5 @@
     "allowImportingTsExtensions": true
   },
   "extends": "expo/tsconfig.base",
-  "exclude": [
-    "tests",
-    "tests-temp"
-  ]
+  "exclude": ["tests", "tests-temp"]
 }

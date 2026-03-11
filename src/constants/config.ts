@@ -33,4 +33,4 @@ export const DEFAULT_NOTIFICATIONS_ENABLED = true;
 
 export const DEFAULT_MODE = 'auto' as const;
 export const DEFAULT_MANUAL_CUP_SIZE = 500; // Garrafinha padrão
-export const DEFAULT_MANUAL_GOAL = 3000;    // Meta manual padrão
+export const DEFAULT_MANUAL_GOAL = 3000; // Meta manual padrão

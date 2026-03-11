@@ -14,7 +14,11 @@ test('archiveDayIfNeeded ignora dia vazio e consumo zero', () => {
 });
 
 test('archiveDayIfNeeded faz upsert por data', () => {
-  const history = archiveDayIfNeeded([{ date: '2026-03-02', consumedMl: 1000 }], '2026-03-02', 1500);
+  const history = archiveDayIfNeeded(
+    [{ date: '2026-03-02', consumedMl: 1000 }],
+    '2026-03-02',
+    1500,
+  );
   assert.deepEqual(history, [{ date: '2026-03-02', consumedMl: 1500 }]);
 });
 
@@ -24,14 +28,18 @@ test('computeBestDay escolhe maior consumo e desempata por data mais recente', (
       { date: '2026-03-01', consumedMl: 2000 },
       { date: '2026-03-02', consumedMl: 2000 },
     ],
-    { date: '2026-03-03', consumedMl: 1800 }
+    { date: '2026-03-03', consumedMl: 1800 },
   );
 
   assert.deepEqual(best, { date: '2026-03-02', consumedMl: 2000 });
 });
 
 test('buildDisplayHistory inclui o dia atual quando ha consumo', () => {
-  const display = buildDisplayHistory([{ date: '2026-03-02', consumedMl: 1400 }], '2026-03-03', 900);
+  const display = buildDisplayHistory(
+    [{ date: '2026-03-02', consumedMl: 1400 }],
+    '2026-03-03',
+    900,
+  );
   assert.deepEqual(display, [
     { date: '2026-03-03', consumedMl: 900 },
     { date: '2026-03-02', consumedMl: 1400 },
@@ -62,7 +70,7 @@ test('summarizeHistory calcula media, meta atual e tendencia do periodo', () => 
       { date: '2026-03-03', consumedMl: 1200 },
       { date: '2026-03-02', consumedMl: 900 },
     ],
-    1300
+    1300,
   );
 
   assert.equal(summary.trackedDays, 3);

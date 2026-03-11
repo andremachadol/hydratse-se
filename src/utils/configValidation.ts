@@ -133,7 +133,9 @@ export const resolveUserConfigForm = ({
 
   const parsedWeight = parseWeight(weightInput);
   const persistedWeight =
-    parsedWeight && parsedWeight >= MIN_WEIGHT && parsedWeight <= MAX_WEIGHT ? parsedWeight : DEFAULT_WEIGHT;
+    parsedWeight && parsedWeight >= MIN_WEIGHT && parsedWeight <= MAX_WEIGHT
+      ? parsedWeight
+      : DEFAULT_WEIGHT;
 
   if (mode === 'auto') {
     if (!parsedWeight || parsedWeight < MIN_WEIGHT || parsedWeight > MAX_WEIGHT) {
@@ -153,7 +155,9 @@ export const resolveUserConfigForm = ({
         manualCupSize: DEFAULT_MANUAL_CUP_SIZE,
       },
       warningMessage:
-        parsedWeight > HEALTH_WARNING_WEIGHT ? 'Peso muito elevado, considere consultar um medico.' : undefined,
+        parsedWeight > HEALTH_WARNING_WEIGHT
+          ? 'Peso muito elevado, considere consultar um medico.'
+          : undefined,
     };
   }
 
@@ -180,7 +184,9 @@ export const resolveUserConfigForm = ({
       manualCupSize: cupMl,
     },
     warningMessage:
-      persistedWeight > HEALTH_WARNING_WEIGHT ? 'Peso muito elevado, considere consultar um medico.' : undefined,
+      persistedWeight > HEALTH_WARNING_WEIGHT
+        ? 'Peso muito elevado, considere consultar um medico.'
+        : undefined,
   };
 };
 
@@ -189,11 +195,20 @@ export const parseStoredUserConfig = (config: unknown): Partial<UserConfig> | nu
   if (!isRecord(parsed)) return null;
 
   if ('weight' in parsed && !isPositiveNumber(parsed.weight)) return null;
-  if ('startTime' in parsed && (typeof parsed.startTime !== 'string' || !TIME_REGEX.test(parsed.startTime))) return null;
-  if ('endTime' in parsed && (typeof parsed.endTime !== 'string' || !TIME_REGEX.test(parsed.endTime))) return null;
+  if (
+    'startTime' in parsed &&
+    (typeof parsed.startTime !== 'string' || !TIME_REGEX.test(parsed.startTime))
+  )
+    return null;
+  if (
+    'endTime' in parsed &&
+    (typeof parsed.endTime !== 'string' || !TIME_REGEX.test(parsed.endTime))
+  )
+    return null;
   if ('intervalMinutes' in parsed && !isValidIntervalMinutes(parsed.intervalMinutes)) return null;
   if ('dailyGoalMl' in parsed && !isPositiveNumber(parsed.dailyGoalMl)) return null;
-  if ('notificationsEnabled' in parsed && typeof parsed.notificationsEnabled !== 'boolean') return null;
+  if ('notificationsEnabled' in parsed && typeof parsed.notificationsEnabled !== 'boolean')
+    return null;
   if ('mode' in parsed && !isValidMode(parsed.mode)) return null;
   if ('manualCupSize' in parsed && !isPositiveNumber(parsed.manualCupSize)) return null;
 

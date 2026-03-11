@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateSafeGoalForRemainingWindow, isLateStartToday, resolveEffectiveDailyGoal } from '../src/utils/dailyGoal.ts';
+import {
+  calculateSafeGoalForRemainingWindow,
+  isLateStartToday,
+  resolveEffectiveDailyGoal,
+} from '../src/utils/dailyGoal.ts';
 import type { DayProgress } from '../src/types/index.ts';
 
 test('resolveEffectiveDailyGoal usa override do dia quando disponivel', () => {

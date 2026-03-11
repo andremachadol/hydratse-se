@@ -14,7 +14,12 @@ import {
 } from 'react-native';
 import type { CalculationMode, UserConfig } from '../types';
 import { COLORS, SHADOWS } from '../constants/theme';
-import { formatIntegerInput, formatTimeInput, formatWeightInput, resolveUserConfigForm } from '../utils/configValidation';
+import {
+  formatIntegerInput,
+  formatTimeInput,
+  formatWeightInput,
+  resolveUserConfigForm,
+} from '../utils/configValidation';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -23,7 +28,12 @@ interface SettingsModalProps {
   currentConfig: UserConfig;
 }
 
-export default function SettingsModal({ visible, onClose, onSave, currentConfig }: SettingsModalProps) {
+export default function SettingsModal({
+  visible,
+  onClose,
+  onSave,
+  currentConfig,
+}: SettingsModalProps) {
   const { width } = useWindowDimensions();
   const [mode, setMode] = useState<CalculationMode>('auto');
   const [weight, setWeight] = useState('');
@@ -92,13 +102,17 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
                 style={[styles.tabButton, mode === 'auto' && styles.tabActive]}
                 onPress={() => setMode('auto')}
               >
-                <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>Automático</Text>
+                <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>
+                  Automático
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabButton, mode === 'manual' && styles.tabActive]}
                 onPress={() => setMode('manual')}
               >
-                <Text style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>Manual</Text>
+                <Text style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>
+                  Manual
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -178,7 +192,9 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               </View>
             </View>
 
-            <Text style={[styles.label, !notificationsEnabled && styles.disabledLabel]}>Intervalo entre lembretes</Text>
+            <Text style={[styles.label, !notificationsEnabled && styles.disabledLabel]}>
+              Intervalo entre lembretes
+            </Text>
             <View style={styles.intervalContainer}>
               {[30, 60].map((minutes) => (
                 <TouchableOpacity
@@ -191,7 +207,12 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
                   onPress={() => notificationsEnabled && setInterval(minutes)}
                   disabled={!notificationsEnabled}
                 >
-                  <Text style={[styles.intervalText, interval === minutes && styles.intervalTextSelected]}>
+                  <Text
+                    style={[
+                      styles.intervalText,
+                      interval === minutes && styles.intervalTextSelected,
+                    ]}
+                  >
                     {minutes} min
                   </Text>
                 </TouchableOpacity>
@@ -202,7 +223,10 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
               <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
                 <Text style={styles.textStyle}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.buttonSave]} onPress={() => void handleSave()}>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSave]}
+                onPress={() => void handleSave()}
+              >
                 <Text style={styles.textStyle}>Salvar</Text>
               </TouchableOpacity>
             </View>
@@ -214,7 +238,12 @@ export default function SettingsModal({ visible, onClose, onSave, currentConfig 
 }
 
 const styles = StyleSheet.create({
-  centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   modalView: {
     backgroundColor: COLORS.white,
     borderRadius: 20,
@@ -257,7 +286,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
-  intervalContainer: { flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginBottom: 20 },
+  intervalContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
   intervalBtn: {
     flex: 1,
     paddingVertical: 10,

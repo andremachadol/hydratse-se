@@ -49,7 +49,7 @@ test('buildProgressAfterDrink cria novo dia e atualiza streak', () => {
     progress,
     { id: 'b', amount: 300, timestamp: '2026-03-03T08:00:00.000Z' },
     '2026-03-03',
-    '2026-03-02'
+    '2026-03-02',
   );
 
   assert.equal(result.isNewDay, true);

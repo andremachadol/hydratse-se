@@ -119,15 +119,24 @@ export const loadTrackerState = ({
   return {
     config,
     progress: hydratedProgress,
-    shouldPersistProgress: normalizedProgress !== savedProgress || hasBestDayChanged || hasHistoryChanged,
+    shouldPersistProgress:
+      normalizedProgress !== savedProgress || hasBestDayChanged || hasHistoryChanged,
   };
 };
 
-export const getTodayGoalMl = (config: UserConfig, progress: DayProgress, today: string): number => {
+export const getTodayGoalMl = (
+  config: UserConfig,
+  progress: DayProgress,
+  today: string,
+): number => {
   return resolveEffectiveDailyGoal(config.dailyGoalMl, progress, today);
 };
 
-export const getSuggestedDrinkAmount = (config: UserConfig, progress: DayProgress, today: string): number => {
+export const getSuggestedDrinkAmount = (
+  config: UserConfig,
+  progress: DayProgress,
+  today: string,
+): number => {
   const activeGoalMl = getTodayGoalMl(config, progress, today);
   return calculateNextDrinkAmount(config, progress.consumedMl, activeGoalMl);
 };
@@ -158,10 +167,11 @@ export const registerDrink = ({
       timestamp: timestamp ?? new Date().toISOString(),
     },
     today,
-    yesterday
+    yesterday,
   );
 
-  const reachedGoalToday = progress.consumedMl < activeGoalMl && newProgress.consumedMl >= activeGoalMl;
+  const reachedGoalToday =
+    progress.consumedMl < activeGoalMl && newProgress.consumedMl >= activeGoalMl;
   const reachedBestDayFromHistory =
     !!previousBestDay &&
     previousBestDay.date !== today &&

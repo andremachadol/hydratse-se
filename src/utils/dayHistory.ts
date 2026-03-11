@@ -18,7 +18,7 @@ export interface HistorySummary {
 
 export const upsertDayHistoryEntry = (
   history: DayHistoryEntry[] | undefined,
-  entry: DayHistoryEntry
+  entry: DayHistoryEntry,
 ): DayHistoryEntry[] => {
   const withoutSameDate = (history ?? []).filter((item) => item.date !== entry.date);
   const merged = [...withoutSameDate, entry];
@@ -29,7 +29,7 @@ export const upsertDayHistoryEntry = (
 export const archiveDayIfNeeded = (
   history: DayHistoryEntry[] | undefined,
   date: string,
-  consumedMl: number
+  consumedMl: number,
 ): DayHistoryEntry[] => {
   if (!date || consumedMl <= 0) return history ?? [];
   return upsertDayHistoryEntry(history, { date, consumedMl });
@@ -37,7 +37,7 @@ export const archiveDayIfNeeded = (
 
 export const computeBestDay = (
   history: DayHistoryEntry[] | undefined,
-  currentDay?: DayHistoryEntry
+  currentDay?: DayHistoryEntry,
 ): BestDayRecord | undefined => {
   const candidates: DayHistoryEntry[] = [...(history ?? [])];
   if (currentDay && currentDay.consumedMl > 0) {
@@ -56,7 +56,7 @@ export const computeBestDay = (
 export const buildDisplayHistory = (
   history: DayHistoryEntry[] | undefined,
   currentDate: string,
-  currentConsumedMl: number
+  currentConsumedMl: number,
 ): DayHistoryEntry[] => {
   if (!currentDate || currentConsumedMl <= 0) return history ?? [];
   return upsertDayHistoryEntry(history, { date: currentDate, consumedMl: currentConsumedMl });
@@ -81,7 +81,7 @@ const formatDateKey = (date: Date): string => {
 export const filterHistoryByPeriod = (
   history: DayHistoryEntry[] | undefined,
   currentDate: string,
-  periodDays: number
+  periodDays: number,
 ): DayHistoryEntry[] => {
   const entries = history ?? [];
   if (!currentDate || periodDays <= 0) return entries;
@@ -104,7 +104,7 @@ const averageConsumedMl = (entries: DayHistoryEntry[]): number => {
 
 export const summarizeHistory = (
   history: DayHistoryEntry[] | undefined,
-  currentGoalMl: number
+  currentGoalMl: number,
 ): HistorySummary => {
   const entries = history ?? [];
   if (entries.length === 0) {
@@ -125,7 +125,8 @@ export const summarizeHistory = (
     currentGoalMl > 0 ? entries.filter((entry) => entry.consumedMl >= currentGoalMl).length : 0;
   const lowestDay = entries.reduce((lowest, candidate) => {
     if (candidate.consumedMl < lowest.consumedMl) return candidate;
-    if (candidate.consumedMl === lowest.consumedMl && candidate.date > lowest.date) return candidate;
+    if (candidate.consumedMl === lowest.consumedMl && candidate.date > lowest.date)
+      return candidate;
     return lowest;
   });
 

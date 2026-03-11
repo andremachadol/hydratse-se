@@ -22,7 +22,9 @@ const isPositiveNumber = (value: unknown): value is number => {
 const isValidDayHistoryEntry = (value: unknown): boolean => {
   if (!isRecord(value)) return false;
 
-  return typeof value.date === 'string' && value.date.length > 0 && isNonNegativeNumber(value.consumedMl);
+  return (
+    typeof value.date === 'string' && value.date.length > 0 && isNonNegativeNumber(value.consumedMl)
+  );
 };
 
 export const isValidDrink = (value: unknown): value is Drink => {
@@ -63,10 +65,12 @@ export const parseStoredProgress = (value: unknown): DayProgress | null => {
   if (!Array.isArray(parsed.drinks) || !parsed.drinks.every(isValidDrink)) return null;
   if (!isNonNegativeNumber(parsed.streak)) return null;
   if (typeof parsed.lastDrinkDate !== 'string') return null;
-  if (history !== undefined && (!Array.isArray(history) || !history.every(isValidDayHistoryEntry))) return null;
+  if (history !== undefined && (!Array.isArray(history) || !history.every(isValidDayHistoryEntry)))
+    return null;
   if (bestDay !== undefined && !isValidDayHistoryEntry(bestDay)) return null;
   if (parsed.goalOverrideMl !== undefined && !isPositiveNumber(parsed.goalOverrideMl)) return null;
-  if (parsed.goalOverrideDate !== undefined && typeof parsed.goalOverrideDate !== 'string') return null;
+  if (parsed.goalOverrideDate !== undefined && typeof parsed.goalOverrideDate !== 'string')
+    return null;
 
   return parsed as unknown as DayProgress;
 };

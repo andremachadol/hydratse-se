@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { Text, TouchableOpacity, ViewStyle, TextStyle, StyleProp } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 
 interface WelcomeModeCardProps {
   icon: string;
@@ -29,7 +30,11 @@ function WelcomeModeCard({
   iconStyle,
 }: WelcomeModeCardProps) {
   return (
-    <TouchableOpacity style={[cardStyle, isActive && activeCardStyle]} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={[cardStyle, isActive && activeCardStyle]}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
       <Text style={iconStyle}>{icon}</Text>
       <Text style={[titleStyle, isActive && activeTextStyle]}>{title}</Text>
       <Text style={[descriptionStyle, isActive && activeTextStyle]}>{description}</Text>

@@ -75,12 +75,21 @@ const buildChangelogSection = (newVersion, commits) => {
     else if (parsed.type === 'refactor') buckets.Refactors.push(entry);
     else if (parsed.type === 'docs') buckets.Docs.push(entry);
     else if (parsed.type === 'test') buckets.Tests.push(entry);
-    else if (['chore', 'build', 'ci', 'style', 'perf'].includes(parsed.type)) buckets.Maintenance.push(entry);
+    else if (['chore', 'build', 'ci', 'style', 'perf'].includes(parsed.type))
+      buckets.Maintenance.push(entry);
     else buckets.Other.push(entry);
   }
 
   const lines = [`## v${newVersion} - ${today}`, ''];
-  const orderedSections = ['Features', 'Fixes', 'Refactors', 'Docs', 'Tests', 'Maintenance', 'Other'];
+  const orderedSections = [
+    'Features',
+    'Fixes',
+    'Refactors',
+    'Docs',
+    'Tests',
+    'Maintenance',
+    'Other',
+  ];
 
   let hasAny = false;
   for (const sectionName of orderedSections) {
@@ -111,7 +120,9 @@ const updateJsonFile = (filePath, mutator) => {
 try {
   const status = run('git status --porcelain');
   if (status) {
-    console.error('Working tree is not clean. Commit or stash changes before running release script.');
+    console.error(
+      'Working tree is not clean. Commit or stash changes before running release script.',
+    );
     process.exit(1);
   }
 
@@ -136,9 +147,14 @@ try {
     : [];
 
   const changelogPath = path.join(ROOT, 'CHANGELOG.md');
-  const header = '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
-  const currentChangelog = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, 'utf8') : header;
-  const normalizedChangelog = currentChangelog.startsWith('# Changelog') ? currentChangelog : `${header}${currentChangelog}`;
+  const header =
+    '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
+  const currentChangelog = fs.existsSync(changelogPath)
+    ? fs.readFileSync(changelogPath, 'utf8')
+    : header;
+  const normalizedChangelog = currentChangelog.startsWith('# Changelog')
+    ? currentChangelog
+    : `${header}${currentChangelog}`;
   const section = buildChangelogSection(newVersion, commits);
   const updatedChangelog = `${header}${section}\n${normalizedChangelog.replace(header, '')}`;
   fs.writeFileSync(changelogPath, updatedChangelog, 'utf8');

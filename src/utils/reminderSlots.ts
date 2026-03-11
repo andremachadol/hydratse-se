@@ -1,4 +1,8 @@
-export const buildReminderSlots = (startMins: number, endMins: number, intervalMinutes: number): number[] => {
+export const buildReminderSlots = (
+  startMins: number,
+  endMins: number,
+  intervalMinutes: number,
+): number[] => {
   if (intervalMinutes <= 0 || startMins >= endMins) return [];
 
   const scheduleTimes: number[] = [];

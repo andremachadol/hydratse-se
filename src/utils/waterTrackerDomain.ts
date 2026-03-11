@@ -12,7 +12,7 @@ export const generateDrinkId = (): string => {
 export const calculateNextDrinkAmount = (
   config: UserConfig,
   consumedMl: number,
-  activeGoalMl: number
+  activeGoalMl: number,
 ): number => {
   const remainingMl = Math.max(0, activeGoalMl - consumedMl);
   if (remainingMl <= 0) return 0;
@@ -40,7 +40,7 @@ export const buildProgressAfterDrink = (
   progress: DayProgress,
   newDrink: Drink,
   today: string,
-  yesterday: string
+  yesterday: string,
 ): { newProgress: DayProgress; isNewDay: boolean; previousStreak: number } => {
   const isNewDay = progress.lastDrinkDate !== today;
   const previousStreak = progress.streak;
@@ -71,7 +71,7 @@ export const buildProgressAfterDrink = (
 };
 
 export const buildProgressAfterUndo = (
-  progress: DayProgress
+  progress: DayProgress,
 ): { newProgress: DayProgress; removedDrink: Drink } | null => {
   if (progress.drinks.length === 0) return null;
 

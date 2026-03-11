@@ -15,7 +15,7 @@ test('hasCompleteUserConfig retorna false para null e config parcial', () => {
       weight: 70,
       mode: 'auto',
     }),
-    false
+    false,
   );
 });
 
@@ -31,7 +31,7 @@ test('hasCompleteUserConfig retorna true para config completa valida', () => {
       mode: 'auto',
       manualCupSize: 500,
     }),
-    true
+    true,
   );
 });
 
@@ -90,7 +90,7 @@ test('parseStoredUserConfig suporta envelope versionado e rejeita intervalo inva
       ...wrapped.value,
       intervalMinutes: 45,
     }),
-    null
+    null,
   );
 });
 

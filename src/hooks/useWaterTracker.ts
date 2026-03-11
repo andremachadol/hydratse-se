@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
 import type { WaterTrackerReturn } from '../types';
 import { Logger } from '../services/logger';
@@ -23,23 +23,22 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   const todayGoalMl = getTodayGoalMl(config, progress, today);
   const goalReached = progress.consumedMl >= todayGoalMl;
 
-  const nextDrinkAmount = useMemo(
-    () => getSuggestedDrinkAmount(config, progress, getTodayDate()),
-    [config, progress.consumedMl, progress.goalOverrideMl, progress.goalOverrideDate]
-  );
+  const nextDrinkAmount = getSuggestedDrinkAmount(config, progress, getTodayDate());
 
   const handleNotifications = useCallback(
     async (currentProgressMl: number, currentConfig: UserConfig, currentGoalMl: number) => {
       await syncHydrationNotifications(currentProgressMl, currentGoalMl, currentConfig);
     },
-    []
+    [],
   );
 
   const showProgressSaveError = useCallback(() => {
     Alert.alert('Erro', 'Não foi possível salvar seu progresso agora.');
   }, []);
 
-  const resolveNotificationsForConfig = async (candidateConfig: UserConfig): Promise<UserConfig> => {
+  const resolveNotificationsForConfig = async (
+    candidateConfig: UserConfig,
+  ): Promise<UserConfig> => {
     if (!candidateConfig.notificationsEnabled) {
       return candidateConfig;
     }
@@ -51,7 +50,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
 
     Alert.alert(
       'Lembretes desativados',
-      'A permissão de notificações não foi concedida. Você pode ativar depois nas configurações do dispositivo.'
+      'A permissão de notificações não foi concedida. Você pode ativar depois nas configurações do dispositivo.',
     );
 
     return {
@@ -113,7 +112,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
         result.bestDayEvent.kind === 'surpassed' ? 'Novo melhor dia!' : 'Melhor dia igualado!',
         result.bestDayEvent.kind === 'surpassed'
           ? `Você bateu seu recorde com ${result.newProgress.consumedMl} ml hoje.`
-          : `Você igualou seu recorde de ${result.bestDayEvent.previousBestDay.consumedMl} ml.`
+          : `Você igualou seu recorde de ${result.bestDayEvent.previousBestDay.consumedMl} ml.`,
       );
     }
 

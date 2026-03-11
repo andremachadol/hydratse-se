@@ -1,10 +1,7 @@
 import type { DayProgress } from '../types';
 import { archiveDayIfNeeded, computeBestDay } from './dayHistory.ts';
 
-export const normalizeProgressForToday = (
-  progress: DayProgress,
-  today: string
-): DayProgress => {
+export const normalizeProgressForToday = (progress: DayProgress, today: string): DayProgress => {
   const shouldResetDay = progress.lastDrinkDate !== today;
   const shouldClearOverride = !!progress.goalOverrideDate && progress.goalOverrideDate !== today;
 
@@ -35,7 +32,7 @@ export const calculateNextStreak = (
   currentStreak: number,
   lastDrinkDate: string,
   today: string,
-  yesterday: string
+  yesterday: string,
 ): number => {
   if (lastDrinkDate === today) return currentStreak;
   if (lastDrinkDate === yesterday) return currentStreak + 1;

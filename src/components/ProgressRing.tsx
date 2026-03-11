@@ -18,7 +18,13 @@ function ProgressRing({ consumed, goal, percentage, size = 250 }: ProgressRingPr
   const visualPercentage = Math.min(100, Math.max(0, percentage));
   const strokeDashoffset = circumference - (visualPercentage / 100) * circumference;
   const goalReached = percentage >= 100;
-  const statusText = goalReached ? 'Meta concluída' : percentage >= 75 ? 'Quase lá' : percentage >= 35 ? 'Bom ritmo' : 'Começando';
+  const statusText = goalReached
+    ? 'Meta concluída'
+    : percentage >= 75
+      ? 'Quase lá'
+      : percentage >= 35
+        ? 'Bom ritmo'
+        : 'Começando';
   const percentageFontSize = size >= 290 ? 56 : size <= 220 ? 42 : 48;
   const amountFontSize = size >= 290 ? 16 : 15;
   const eyebrowFontSize = size <= 220 ? 11 : 12;
@@ -26,7 +32,14 @@ function ProgressRing({ consumed, goal, percentage, size = 250 }: ProgressRingPr
   return (
     <View style={styles.container}>
       <Svg height={size} width={size} viewBox={`0 0 ${size} ${size}`}>
-        <Circle cx={center} cy={center} r={radius} stroke={COLORS.border} strokeWidth={strokeWidth} fill="transparent" />
+        <Circle
+          cx={center}
+          cy={center}
+          r={radius}
+          stroke={COLORS.border}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
         <Circle
           cx={center}
           cy={center}
@@ -44,14 +57,22 @@ function ProgressRing({ consumed, goal, percentage, size = 250 }: ProgressRingPr
 
       <View style={styles.textContainer}>
         <Text style={[styles.eyebrow, { fontSize: eyebrowFontSize }]}>Hoje</Text>
-        <Text style={[styles.percentageText, { fontSize: percentageFontSize }, goalReached && styles.percentageTextDone]}>
+        <Text
+          style={[
+            styles.percentageText,
+            { fontSize: percentageFontSize },
+            goalReached && styles.percentageTextDone,
+          ]}
+        >
           {percentage}%
         </Text>
         <Text style={[styles.amountText, { fontSize: amountFontSize }]}>
           {consumed} / {goal} ml
         </Text>
         <View style={[styles.statusPill, goalReached && styles.statusPillDone]}>
-          <Text style={[styles.statusText, goalReached && styles.statusTextDone]}>{statusText}</Text>
+          <Text style={[styles.statusText, goalReached && styles.statusTextDone]}>
+            {statusText}
+          </Text>
         </View>
       </View>
     </View>

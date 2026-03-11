@@ -12,7 +12,14 @@ interface DrinkControlsProps {
   hasHistory: boolean;
 }
 
-function DrinkControls({ onDrink, onUndo, onReset, drinkSize, goalReached, hasHistory }: DrinkControlsProps) {
+function DrinkControls({
+  onDrink,
+  onUndo,
+  onReset,
+  drinkSize,
+  goalReached,
+  hasHistory,
+}: DrinkControlsProps) {
   const primaryLabel = goalReached ? 'Objetivo concluído' : `+ ${drinkSize} ml`;
   const primaryHint = goalReached ? 'Hoje está completo' : 'Registrar agora';
 
@@ -26,7 +33,9 @@ function DrinkControls({ onDrink, onUndo, onReset, drinkSize, goalReached, hasHi
           goalReached ? 'Meta de hidratação concluída' : `Registrar ${drinkSize} mililitros de água`
         }
         accessibilityRole="button"
-        accessibilityHint={goalReached ? 'A meta de hoje já foi batida' : 'Toque para registrar seu próximo gole'}
+        accessibilityHint={
+          goalReached ? 'A meta de hoje já foi batida' : 'Toque para registrar seu próximo gole'
+        }
         disabled={goalReached}
       >
         <LinearGradient

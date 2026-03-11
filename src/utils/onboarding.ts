@@ -28,11 +28,15 @@ export const resolveOnboardingInputs = (
   manualGoalInput: string,
   manualCupInput: string,
   mlPerKg: number,
-  constraints: OnboardingConstraints
+  constraints: OnboardingConstraints,
 ): OnboardingResult => {
   if (mode === 'auto') {
     const parsedWeight = Number.parseFloat(weightInput.replace(',', '.'));
-    if (!Number.isFinite(parsedWeight) || parsedWeight < constraints.minWeight || parsedWeight > constraints.maxWeight) {
+    if (
+      !Number.isFinite(parsedWeight) ||
+      parsedWeight < constraints.minWeight ||
+      parsedWeight > constraints.maxWeight
+    ) {
       return { ok: false, errorMessage: 'Informe um peso valido (kg).' };
     }
   }
@@ -56,7 +60,8 @@ export const resolveOnboardingInputs = (
     ok: true,
     value: {
       weight: result.value.weight,
-      goalMl: result.value.mode === 'auto' ? result.value.weight * mlPerKg : result.value.dailyGoalMl,
+      goalMl:
+        result.value.mode === 'auto' ? result.value.weight * mlPerKg : result.value.dailyGoalMl,
       cupMl: result.value.manualCupSize,
     },
     warningMessage: result.warningMessage,
@@ -65,7 +70,7 @@ export const resolveOnboardingInputs = (
 
 export const buildInitialProgress = (
   todayGoalOverrideMl?: number,
-  todayDate?: string
+  todayDate?: string,
 ): DayProgress => {
   return {
     consumedMl: 0,

@@ -57,8 +57,16 @@ export const useTrackerPersistence = (): TrackerPersistence => {
         }
       }
 
-      const currentGoalMl = getTodayGoalMl(loadedState.config, loadedState.progress, getTodayDate());
-      await syncHydrationNotifications(loadedState.progress.consumedMl, currentGoalMl, loadedState.config);
+      const currentGoalMl = getTodayGoalMl(
+        loadedState.config,
+        loadedState.progress,
+        getTodayDate(),
+      );
+      await syncHydrationNotifications(
+        loadedState.progress.consumedMl,
+        currentGoalMl,
+        loadedState.config,
+      );
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -77,32 +85,38 @@ export const useTrackerPersistence = (): TrackerPersistence => {
     };
   }, [loadData]);
 
-  const persistProgress = useCallback(async (newProgress: DayProgress): Promise<boolean> => {
-    const previousProgress = progressRef.current;
-    updateProgressState(newProgress);
+  const persistProgress = useCallback(
+    async (newProgress: DayProgress): Promise<boolean> => {
+      const previousProgress = progressRef.current;
+      updateProgressState(newProgress);
 
-    const saved = await Storage.saveProgress(newProgress);
-    if (!saved) {
-      updateProgressState(previousProgress);
-      console.error('Falha ao persistir progresso, estado revertido');
-      return false;
-    }
+      const saved = await Storage.saveProgress(newProgress);
+      if (!saved) {
+        updateProgressState(previousProgress);
+        console.error('Falha ao persistir progresso, estado revertido');
+        return false;
+      }
 
-    return true;
-  }, [updateProgressState]);
+      return true;
+    },
+    [updateProgressState],
+  );
 
-  const persistConfig = useCallback(async (newConfig: UserConfig): Promise<boolean> => {
-    const previousConfig = configRef.current;
-    updateConfigState(newConfig);
+  const persistConfig = useCallback(
+    async (newConfig: UserConfig): Promise<boolean> => {
+      const previousConfig = configRef.current;
+      updateConfigState(newConfig);
 
-    const saved = await Storage.saveConfig(newConfig);
-    if (!saved) {
-      updateConfigState(previousConfig);
-      return false;
-    }
+      const saved = await Storage.saveConfig(newConfig);
+      if (!saved) {
+        updateConfigState(previousConfig);
+        return false;
+      }
 
-    return true;
-  }, [updateConfigState]);
+      return true;
+    },
+    [updateConfigState],
+  );
 
   return { config, progress, isLoading, persistProgress, persistConfig };
 };
