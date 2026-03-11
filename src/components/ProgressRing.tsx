@@ -13,6 +13,7 @@ interface ProgressRingProps {
 function ProgressRing({ consumed, goal, percentage, size = 250 }: ProgressRingProps) {
   const strokeWidth = size >= 290 ? 22 : size <= 220 ? 18 : 20;
   const radius = (size - strokeWidth) / 2;
+  const innerRadius = Math.max(0, radius - strokeWidth * 1.2);
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const visualPercentage = Math.min(100, Math.max(0, percentage));
@@ -36,7 +37,7 @@ function ProgressRing({ consumed, goal, percentage, size = 250 }: ProgressRingPr
           cx={center}
           cy={center}
           r={radius}
-          stroke={COLORS.border}
+          stroke={COLORS.borderStrong}
           strokeWidth={strokeWidth}
           fill="transparent"
         />
@@ -53,6 +54,7 @@ function ProgressRing({ consumed, goal, percentage, size = 250 }: ProgressRingPr
           rotation="-90"
           origin={`${center}, ${center}`}
         />
+        <Circle cx={center} cy={center} r={innerRadius} fill={COLORS.surfaceElevated} />
       </Svg>
 
       <View style={styles.textContainer}>
@@ -91,18 +93,20 @@ const styles = StyleSheet.create({
   },
   percentageText: { fontSize: 48, fontWeight: 'bold', color: COLORS.primary, marginTop: 4 },
   percentageTextDone: {
-    color: COLORS.secondary,
+    color: COLORS.success,
   },
-  amountText: { fontSize: 15, color: COLORS.textLight, marginTop: 4 },
+  amountText: { fontSize: 15, color: COLORS.textDark, marginTop: 4, fontWeight: '600' },
   statusPill: {
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#E7F8FC',
+    backgroundColor: COLORS.surfacePrimary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   statusPillDone: {
-    backgroundColor: '#E6FBF3',
+    backgroundColor: COLORS.surfaceSuccess,
   },
   statusText: {
     fontSize: 11,
@@ -110,7 +114,7 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
   },
   statusTextDone: {
-    color: '#127A55',
+    color: COLORS.success,
   },
 });
 

@@ -1,6 +1,6 @@
 # Hidrate-se
 
-App mobile de hidratação diária com onboarding simples, meta automática/manual, histórico local e lembretes por notificação local. O projeto é 100% client-side: não depende de backend e persiste os dados do usuário no dispositivo com AsyncStorage.
+App mobile de hidratação diária com onboarding guiado, meta automática ou manual, histórico local e lembretes por notificação local. O projeto é 100% client-side: não depende de backend e persiste os dados do usuário no dispositivo com `AsyncStorage`.
 
 ## Stack
 
@@ -8,7 +8,7 @@ App mobile de hidratação diária com onboarding simples, meta automática/manu
 - React Native 0.81
 - React 19
 - TypeScript (`strict`)
-- AsyncStorage
+- `@react-native-async-storage/async-storage`
 - `expo-notifications`
 - `expo-linear-gradient`
 - `expo-av`
@@ -16,33 +16,35 @@ App mobile de hidratação diária com onboarding simples, meta automática/manu
 
 ## Fluxo do app
 
-1. `App.tsx` usa `useAppBootstrap.ts` para decidir entre splash, onboarding e home.
-2. Sem configuração válida, o usuário passa pelo onboarding em `WelcomeScreen.tsx`.
-3. O onboarding usa `useOnboardingFlow.ts` e `application/onboardingFlow.ts` para permissão, persistência inicial e regras da configuração.
-4. Com configuração válida, o app abre direto em `HomeScreen.tsx`.
-5. `useWaterTracker.ts` centraliza o fluxo de hidratação, enquanto `useTrackerPersistence.ts` concentra carga e persistência do tracker.
+1. `App.tsx` usa `useAppBootstrap.ts` para decidir entre splash, onboarding e dashboard.
+2. Sem configuração válida, o app abre `WelcomeScreen.tsx`.
+3. O onboarding usa `useOnboardingFlow.ts` e `application/onboardingFlow.ts` para validar entrada, salvar a configuração inicial e tratar casos de início tardio.
+4. Com configuração válida, o app abre `HomeScreen.tsx`.
+5. `useWaterTracker.ts` concentra a lógica principal do tracker e `useTrackerPersistence.ts` faz carga e persistência do estado.
 
 ## Funcionalidades atuais
 
 - Meta automática por peso (`35 ml/kg`) ou meta manual
+- Onboarding guiado com modo automático ou manual
+- Jornada padrão inicial de `08:00` às `18:00`
 - Controle diário com registro de goles
+- Sugestão de próximo consumo ao longo da janela do dia
 - Sequência diária
-- Histórico de dias com filtro `7`, `14` e `30`
+- Histórico com filtros de `7`, `14` e `30` dias
 - Melhor dia registrado
 - Anel de progresso
 - Splash animada com áudio
-- Configuração de janela de hidratação e intervalo de lembretes
+- Ajuste de horários, meta e intervalo de lembretes
 - Desfazer último gole e zerar o dia
 
-## Regras de notificação
+## Regras de lembrete
 
-- Janela configurável com `startTime` até `endTime`
+- Janela configurável entre `startTime` e `endTime`
 - Intervalo de `30` ou `60` minutos
-- Slots começam no `startTime`
 - Agendamento por `DATE` para hoje e amanhã
-- Ao bater a meta, cancela apenas as notificações de hoje
-- As notificações de amanhã continuam agendadas
-- Ao desativar notificações, o app remove todos os lembretes gerenciados por ele
+- Ao bater a meta, o app cancela apenas os lembretes de hoje
+- Os lembretes de amanhã continuam agendados
+- Ao desativar notificações, o app remove os lembretes gerenciados por ele
 
 ## Início tardio no onboarding
 
@@ -53,28 +55,30 @@ Se o usuário finalizar a configuração no meio da janela diária, o app oferec
 
 Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 
-## Estrutura
+## Estrutura principal
 
 ```text
 .
 |-- App.tsx
 |-- app.json
 |-- eas.json
-|-- eslint.config.mjs
 |-- package.json
-|-- scripts/
-|   `-- release.js
 |-- src/
 |   |-- application/
 |   |   |-- appBootstrap.ts
 |   |   `-- onboardingFlow.ts
 |   |-- components/
+|   |   |-- ActionControlsCard.tsx
+|   |   |-- AmbientBackdrop.tsx
+|   |   |-- DailyGoalSummaryCard.tsx
+|   |   |-- HistoryInsightsCard.tsx
 |   |   |-- HomeActionSection.tsx
-|   |   |-- HomeGoalCard.tsx
 |   |   |-- HomeHeader.tsx
-|   |   |-- HomeHistoryCard.tsx
-|   |   |-- WelcomeIntroPanel.tsx
-|   |   `-- WelcomeSetupPanel.tsx
+|   |   |-- HydrationInsightCard.tsx
+|   |   |-- OnboardingOverviewPanel.tsx
+|   |   |-- OnboardingSetupCard.tsx
+|   |   |-- ProgressRing.tsx
+|   |   `-- RoutineSettingsSheet.tsx
 |   |-- hooks/
 |   |   |-- useAppBootstrap.ts
 |   |   |-- useHomeDashboard.ts
@@ -85,12 +89,12 @@ Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 |   |   |-- HomeScreen.tsx
 |   |   `-- WelcomeScreen.tsx
 |   |-- services/
+|   |   |-- hydrationNotifications.ts
+|   |   |-- logger.ts
+|   |   `-- storage.ts
 |   |-- types/
 |   `-- utils/
 `-- tests/
-    |-- appBootstrap.test.ts
-    |-- onboardingFlow.test.ts
-    `-- ...
 ```
 
 ## Como rodar
@@ -99,7 +103,7 @@ Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 
 - Node.js com suporte a `--experimental-strip-types`
 - npm
-- Emulador Android/iOS ou dispositivo físico
+- Android Studio ou emulador/dispositivo compatível
 
 ### Instalar dependências
 
@@ -107,13 +111,22 @@ Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 npm install
 ```
 
-### Desenvolvimento
+### Desenvolvimento com Metro
 
 ```bash
 npm run start
 ```
 
-Scripts disponíveis:
+### Fluxo recomendado no Android Studio
+
+1. Abra a pasta `android/` no Android Studio.
+2. Inicie um emulador ou conecte um dispositivo.
+3. Na raiz do projeto, rode `npm run start`.
+4. No Android Studio, execute o app em `debug`.
+
+Depois da primeira execução, mudanças em `ts`, `tsx` e `js` entram por Fast Refresh.
+
+### Scripts disponíveis
 
 - `npm run start`
 - `npm run android`
@@ -128,32 +141,20 @@ Scripts disponíveis:
 - `npm run test:watch`
 - `npm run check`
 
-## Testes
+## Testes e qualidade
 
 O projeto usa o test runner nativo do Node com TypeScript via `--experimental-strip-types`.
 
 ```bash
-npm run test
-```
-
-Modo watch:
-
-```bash
-npm run test:watch
-```
-
-## Qualidade
-
-```bash
-# Lint
-npm run lint
-
-# Formato
-npm run format:check
-
-# Lint + formato + tipagem + testes
 npm run check
 ```
+
+Esse comando executa:
+
+- lint
+- verificação de formato
+- typecheck
+- testes automatizados
 
 ## CI
 
@@ -162,13 +163,16 @@ npm run check
 
 ## Build
 
-```bash
-# Android preview (APK)
-eas build --platform android --profile preview
+### APK/AAB com EAS
 
-# Produção
+```bash
+eas build --platform android --profile preview
 eas build --platform android --profile production
 ```
+
+### Build local Android
+
+Com a pasta `android/` presente, também é possível gerar builds locais com Gradle e Android Studio.
 
 ## Releases
 

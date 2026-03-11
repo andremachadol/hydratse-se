@@ -53,7 +53,7 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
       soundRef.current = sound;
       await sound.playAsync();
     } catch {
-      // Falha no som nao impede a animacao.
+      // Falha no som não impede a animação.
     }
   }, []);
 
@@ -109,7 +109,7 @@ export default function SplashAnimation({ onFinish, isLoading }: SplashAnimation
           </View>
           <View style={styles.reflection} />
         </View>
-        <Text style={styles.loadingText}>Preparando sua rotina de hidratacao...</Text>
+        <Text style={styles.loadingText}>Preparando sua rotina de hidratação...</Text>
       </LinearGradient>
     </Animated.View>
   );

@@ -12,7 +12,7 @@ export const HEALTH_WARNING_WEIGHT = 200;
 
 // Horários padrão
 export const DEFAULT_START_TIME = '08:00';
-export const DEFAULT_END_TIME = '22:00';
+export const DEFAULT_END_TIME = '18:00';
 
 // Intervalo de lembretes (minutos)
 export const DEFAULT_INTERVAL_MINUTES = 60;

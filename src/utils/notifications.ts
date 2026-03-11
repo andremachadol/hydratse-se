@@ -1,5 +1,10 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  DEFAULT_END_TIME,
+  DEFAULT_INTERVAL_MINUTES,
+  DEFAULT_START_TIME,
+} from '../constants/config';
 import { getDateWithOffset, timeToMinutes } from './time';
 import { buildReminderSlots, getUpcomingSlotsForToday } from './reminderSlots';
 import type { UserConfig } from '../types';
@@ -120,9 +125,9 @@ export const scheduleHydrationReminders = async (config?: ReminderConfig): Promi
       return false;
     }
 
-    const startTime = config?.startTime || '08:00';
-    const endTime = config?.endTime || '22:00';
-    const intervalMinutes = config?.intervalMinutes || 60;
+    const startTime = config?.startTime || DEFAULT_START_TIME;
+    const endTime = config?.endTime || DEFAULT_END_TIME;
+    const intervalMinutes = config?.intervalMinutes || DEFAULT_INTERVAL_MINUTES;
 
     const startMins = timeToMinutes(startTime);
     const endMins = timeToMinutes(endTime);
@@ -161,7 +166,7 @@ export const scheduleHydrationReminders = async (config?: ReminderConfig): Promi
 
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
-            title: 'Hora da agua! 💧',
+            title: 'Hora da água! 💧',
             body: 'Mantenha o foco e beba mais um gole.',
             sound: true,
             data: {

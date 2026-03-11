@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import SettingsModal from '../components/SettingsModal';
+import AmbientBackdrop from '../components/AmbientBackdrop';
+import DailyGoalSummaryCard from '../components/DailyGoalSummaryCard';
+import HistoryInsightsCard from '../components/HistoryInsightsCard';
+import RoutineSettingsSheet from '../components/RoutineSettingsSheet';
 import HomeActionSection from '../components/HomeActionSection';
-import HomeGoalCard from '../components/HomeGoalCard';
 import HomeHeader from '../components/HomeHeader';
-import HomeHistoryCard from '../components/HomeHistoryCard';
 import { COLORS } from '../constants/theme';
 import { type HistoryPeriod, useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useWaterTracker } from '../hooks/useWaterTracker';
+import { formatLongDate } from '../utils/homePresentation';
 
 const COMPACT_MAX_WIDTH = 460;
 const MEDIUM_MAX_WIDTH = 760;
@@ -45,6 +47,7 @@ export default function HomeScreen() {
     goalReached,
     historyPeriod,
   });
+  const remainingMl = Math.max(todayGoalMl - progress.consumedMl, 0);
 
   if (isLoading) {
     return (
@@ -56,7 +59,7 @@ export default function HomeScreen() {
 
   const detailsSection = (
     <View style={[styles.secondaryColumn, isExpanded && styles.secondaryColumnExpanded]}>
-      <HomeGoalCard
+      <DailyGoalSummaryCard
         config={config}
         todayGoalMl={todayGoalMl}
         consumedMl={progress.consumedMl}
@@ -65,7 +68,7 @@ export default function HomeScreen() {
         isExpanded={isExpanded}
         onOpenSettings={() => setModalVisible(true)}
       />
-      <HomeHistoryCard
+      <HistoryInsightsCard
         isExpanded={isExpanded}
         historyPeriod={historyPeriod}
         historySummary={dashboard.historySummary}
@@ -82,10 +85,12 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
+      <AmbientBackdrop variant="home" />
       <StatusBar style="dark" />
 
       <HomeHeader
         streak={progress.streak}
+        dateLabel={formatLongDate(dashboard.todayDate)}
         isExpanded={isExpanded}
         onOpenSettings={() => setModalVisible(true)}
       />
@@ -109,6 +114,8 @@ export default function HomeScreen() {
                   todayGoalMl={todayGoalMl}
                   percentage={dashboard.percentage}
                   ringSize={ringSize}
+                  remainingMl={remainingMl}
+                  drinkCount={progress.drinks.length}
                   drinkSize={nextDrinkAmount}
                   goalReached={goalReached}
                   hasHistory={progress.drinks.length > 0}
@@ -126,6 +133,8 @@ export default function HomeScreen() {
                   todayGoalMl={todayGoalMl}
                   percentage={dashboard.percentage}
                   ringSize={ringSize}
+                  remainingMl={remainingMl}
+                  drinkCount={progress.drinks.length}
                   drinkSize={nextDrinkAmount}
                   goalReached={goalReached}
                   hasHistory={progress.drinks.length > 0}
@@ -141,7 +150,7 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
-      <SettingsModal
+      <RoutineSettingsSheet
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSave={saveConfig}
@@ -161,6 +170,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF',
     paddingTop: 56,
+    position: 'relative',
   },
   contentContainer: {
     flex: 1,

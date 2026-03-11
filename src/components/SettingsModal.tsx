@@ -187,7 +187,7 @@ export default function SettingsModal({
                   onChangeText={(text) => setEndTime(formatTimeInput(text))}
                   keyboardType="number-pad"
                   maxLength={5}
-                  placeholder="22:00"
+                  placeholder="18:00"
                 />
               </View>
             </View>

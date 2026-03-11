@@ -4,30 +4,60 @@ import { COLORS, SHADOWS } from '../constants/theme';
 
 interface HomeHeaderProps {
   streak: number;
+  dateLabel: string;
   isExpanded: boolean;
   onOpenSettings: () => void;
 }
 
-export default function HomeHeader({ streak, isExpanded, onOpenSettings }: HomeHeaderProps) {
+export default function HomeHeader({
+  streak,
+  dateLabel,
+  isExpanded,
+  onOpenSettings,
+}: HomeHeaderProps) {
+  const streakLabel = streak === 1 ? 'dia seguido' : 'dias seguidos';
+  const sidePanelWidth = isExpanded ? 116 : 104;
+  const sidePanelHeight = isExpanded ? 92 : 88;
+
   return (
     <View style={styles.headerContainer}>
-      <View style={styles.streakPill} accessibilityLabel={`Sequência de ${streak} dias`}>
-        <Text style={styles.streakIcon}>🔥</Text>
-        <Text style={styles.streakText}>{streak}</Text>
-      </View>
-      <Text
-        style={[styles.appName, isExpanded && styles.appNameExpanded]}
-        accessibilityRole="header"
+      <View
+        style={[
+          styles.sidePanel,
+          { width: sidePanelWidth, height: sidePanelHeight },
+          styles.sideCard,
+        ]}
+        accessibilityLabel={`Sequência de ${streak} dias`}
       >
-        Hidrate-se
-      </Text>
+        <Text style={styles.sideEyebrow}>Sequência</Text>
+        <Text style={styles.streakValue}>{streak}</Text>
+        <Text style={styles.sideCaption}>{streakLabel}</Text>
+      </View>
+
+      <View style={styles.titleBlock}>
+        <Text style={styles.titleEyebrow}>Rotina de hoje</Text>
+        <Text
+          style={[styles.appName, isExpanded && styles.appNameExpanded]}
+          accessibilityRole="header"
+        >
+          Hidrate-se
+        </Text>
+        <Text style={styles.dateText}>{dateLabel}</Text>
+      </View>
+
       <TouchableOpacity
-        style={styles.settingsButton}
+        style={[
+          styles.sidePanel,
+          { width: sidePanelWidth, height: sidePanelHeight },
+          styles.settingsButton,
+        ]}
         onPress={onOpenSettings}
         accessibilityLabel="Abrir configurações"
         accessibilityRole="button"
+        activeOpacity={0.85}
       >
-        <Text style={styles.settingsIcon}>⚙️</Text>
+        <Text style={styles.sideEyebrow}>Rotina</Text>
+        <Text style={styles.settingsLabel}>Ajustes</Text>
       </TouchableOpacity>
     </View>
   );
@@ -38,41 +68,81 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginBottom: 18,
   },
-  streakPill: {
-    minWidth: 58,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    flexDirection: 'row',
-    alignItems: 'center',
+  sidePanel: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceCard,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+    flexShrink: 0,
     justifyContent: 'center',
-    gap: 4,
     ...SHADOWS.small,
   },
-  streakIcon: { fontSize: 18 },
-  streakText: { fontSize: 15, fontWeight: '700', color: COLORS.secondary },
-  appName: {
-    flex: 1,
+  sideCard: {
+    alignItems: 'center',
+  },
+  sideEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: COLORS.primary,
     textAlign: 'center',
-    fontSize: 28,
+  },
+  streakValue: {
+    marginTop: 4,
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
+  sideCaption: {
+    marginTop: 2,
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  titleBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  titleEyebrow: {
+    fontSize: 11,
+    color: COLORS.primary,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  appName: {
+    marginTop: 4,
+    textAlign: 'center',
+    fontSize: 27,
     fontWeight: '800',
     color: COLORS.secondary,
   },
   appNameExpanded: {
-    fontSize: 30,
+    fontSize: 31,
+  },
+  dateText: {
+    marginTop: 4,
+    fontSize: 13,
+    color: COLORS.textLight,
+    fontWeight: '600',
   },
   settingsButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.82)',
     alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.small,
+    justifyContent: 'space-between',
   },
-  settingsIcon: { fontSize: 21 },
+  settingsLabel: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textAlign: 'center',
+  },
 });

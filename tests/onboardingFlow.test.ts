@@ -16,7 +16,7 @@ const createDependencies = (overrides?: {
     requestNotificationPermission: overrides?.requestNotificationPermission ?? (async () => true),
     saveConfig: overrides?.saveConfig ?? (async () => true),
     saveProgress: overrides?.saveProgress ?? (async () => true),
-    now: overrides?.now ?? new Date('2026-03-10T20:30:00'),
+    now: overrides?.now ?? new Date('2026-03-10T16:30:00'),
     todayDate: overrides?.todayDate ?? '2026-03-10',
   };
 };

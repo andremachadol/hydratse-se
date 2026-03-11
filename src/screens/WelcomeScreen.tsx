@@ -12,8 +12,9 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import WelcomeIntroPanel from '../components/WelcomeIntroPanel';
-import WelcomeSetupPanel from '../components/WelcomeSetupPanel';
+import AmbientBackdrop from '../components/AmbientBackdrop';
+import OnboardingOverviewPanel from '../components/OnboardingOverviewPanel';
+import OnboardingSetupCard from '../components/OnboardingSetupCard';
 import { COLORS } from '../constants/theme';
 import { ML_PER_KG, MAX_WEIGHT, MIN_WEIGHT } from '../constants/config';
 import { useOnboardingFlow } from '../hooks/useOnboardingFlow';
@@ -102,9 +103,9 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
     onFinish();
   };
 
-  const introSection = <WelcomeIntroPanel mode={mode} onSelectMode={setMode} />;
+  const introSection = <OnboardingOverviewPanel mode={mode} onSelectMode={setMode} />;
   const setupSection = (
-    <WelcomeSetupPanel
+    <OnboardingSetupCard
       mode={mode}
       weight={weight}
       manualGoal={manualGoal}
@@ -119,6 +120,7 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
 
   return (
     <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
+      <AmbientBackdrop variant="welcome" />
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={[styles.screenShell, { maxWidth: shellMaxWidth }]}>
           {isExpanded ? (
@@ -149,7 +151,7 @@ export default function WelcomeScreen({ onFinish }: WelcomeScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, position: 'relative' },
   scrollContent: { padding: 20, paddingTop: 44, paddingBottom: 28, alignItems: 'center' },
   screenShell: {
     width: '100%',
