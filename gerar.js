@@ -1,23 +1,26 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import fs from 'fs';
+import path from 'path';
 
-// Configuração
 const outputFile = 'codigo_completo.txt';
 const targetDir = './src';
 const rootFile = './App.tsx';
-const extensions = ['.ts', '.tsx'];
+const extensions = ['.ts', '.tsx', '.js', '.jsx'];
+const ignoreDirs = ['node_modules', '.expo', '.git', 'assets'];
 
 let output = '';
 
-// 1. Função para ler arquivos recursivamente
 function readDir(dir) {
+    if (!fs.existsSync(dir)) return;
     const files = fs.readdirSync(dir);
+
     files.forEach(file => {
         const fullPath = path.join(dir, file);
         const stat = fs.statSync(fullPath);
 
         if (stat.isDirectory()) {
-            readDir(fullPath); // Recursão
+            if (!ignoreDirs.includes(file)) {
+                readDir(fullPath);
+            }
         } else {
             if (extensions.includes(path.extname(fullPath))) {
                 addFileToOutput(fullPath);
@@ -26,7 +29,6 @@ function readDir(dir) {
     });
 }
 
-// 2. Adiciona conteúdo ao output
 function addFileToOutput(filePath) {
     try {
         const content = fs.readFileSync(filePath, 'utf8');
@@ -40,15 +42,8 @@ function addFileToOutput(filePath) {
     }
 }
 
-// Execução
-console.log('Gerando arquivo...');
-
-// Lê App.tsx
+console.log('Gerando arquivo da base refatorada...');
 if (fs.existsSync(rootFile)) addFileToOutput(rootFile);
-
-// Lê pasta src
-if (fs.existsSync(targetDir)) readDir(targetDir);
-
-// Salva
+readDir(targetDir);
 fs.writeFileSync(outputFile, output);
 console.log(`\nSucesso! Arquivo criado: ${outputFile}`);
