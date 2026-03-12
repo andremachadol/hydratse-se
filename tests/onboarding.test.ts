@@ -1,6 +1,10 @@
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
-import assert from 'node:assert/strict';
-import { buildInitialProgress, resolveOnboardingInputs } from '../src/utils/onboarding.ts';
+import {
+  buildInitialProgress,
+  resolveOnboardingInputs,
+  submitWelcomeSetup,
+} from '../src/utils/onboarding.ts';
 
 const constraints = { minWeight: 20, maxWeight: 650 };
 
@@ -48,4 +52,84 @@ test('buildInitialProgress cria override apenas quando informado', () => {
   assert.equal(noOverride.goalOverrideDate, undefined);
   assert.deepEqual(noOverride.dayHistory, []);
   assert.equal(noOverride.bestDay, undefined);
+});
+
+test('submitWelcomeSetup retorna erro de validacao sem chamar submit', async () => {
+  let called = false;
+
+  const result = await submitWelcomeSetup(
+    {
+      mode: 'auto',
+      weight: '10',
+      manualGoal: '',
+      manualCup: '',
+    },
+    {
+      submitSetup: async () => {
+        called = true;
+        return { ok: true, notices: [] };
+      },
+      askLateStartStrategy: async () => 'keep',
+    },
+  );
+
+  assert.equal(called, false);
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.errorTitle, 'Ops');
+    assert.equal(result.errorMessage, 'Informe um peso valido (kg).');
+  }
+});
+
+test('submitWelcomeSetup preserva warning quando submit retorna falha', async () => {
+  const result = await submitWelcomeSetup(
+    {
+      mode: 'auto',
+      weight: '210',
+      manualGoal: '',
+      manualCup: '',
+    },
+    {
+      submitSetup: async () => ({
+        ok: false,
+        notices: [],
+        errorTitle: 'Erro',
+        errorMessage: 'Falha simulada.',
+      }),
+      askLateStartStrategy: async () => 'keep',
+    },
+  );
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.errorMessage, 'Falha simulada.');
+    assert.equal(result.warningMessage, 'Peso muito elevado, considere consultar um medico.');
+  }
+});
+
+test('submitWelcomeSetup retorna erro generico quando submit lanca excecao', async () => {
+  const result = await submitWelcomeSetup(
+    {
+      mode: 'auto',
+      weight: '210',
+      manualGoal: '',
+      manualCup: '',
+    },
+    {
+      submitSetup: async () => {
+        throw new Error('boom');
+      },
+      askLateStartStrategy: async () => 'adjust',
+    },
+  );
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.errorTitle, 'Erro');
+    assert.equal(
+      result.errorMessage,
+      'N\u00e3o foi poss\u00edvel concluir a configura\u00e7\u00e3o inicial.',
+    );
+    assert.equal(result.warningMessage, 'Peso muito elevado, considere consultar um medico.');
+  }
 });

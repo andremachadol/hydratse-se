@@ -1,5 +1,6 @@
 import React from 'react';
 import { Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ONBOARDING_OVERVIEW_COPY } from '../constants/uiCopy';
 import { COLORS, SHADOWS } from '../constants/theme';
 import type { CalculationMode } from '../types/index.ts';
 
@@ -8,28 +9,6 @@ interface OnboardingOverviewPanelProps {
   onSelectMode: (mode: CalculationMode) => void;
 }
 
-const BENEFITS = ['Meta clara', 'Lembretes seguros', 'Histórico simples'];
-
-const MODE_OPTIONS: Array<{
-  mode: CalculationMode;
-  eyebrow: string;
-  title: string;
-  description: string;
-}> = [
-  {
-    mode: 'auto',
-    eyebrow: 'Peso',
-    title: 'Automático',
-    description: 'Calcula uma meta base a partir do seu peso e mantém a rotina mais simples.',
-  },
-  {
-    mode: 'manual',
-    eyebrow: 'Livre',
-    title: 'Manual',
-    description: 'Você define a meta e o tamanho do copo para seguir sua estratégia atual.',
-  },
-];
-
 export default function OnboardingOverviewPanel({
   mode,
   onSelectMode,
@@ -37,14 +16,12 @@ export default function OnboardingOverviewPanel({
   return (
     <View style={styles.introColumn}>
       <View style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Primeira configuração</Text>
-        <Text style={styles.title}>Monte sua rotina de hidratação</Text>
-        <Text style={styles.subtitle}>
-          Escolha como a meta será definida. Você pode ajustar horários, lembretes e formato depois.
-        </Text>
+        <Text style={styles.heroEyebrow}>{ONBOARDING_OVERVIEW_COPY.heroEyebrow}</Text>
+        <Text style={styles.title}>{ONBOARDING_OVERVIEW_COPY.title}</Text>
+        <Text style={styles.subtitle}>{ONBOARDING_OVERVIEW_COPY.subtitle}</Text>
 
         <View style={styles.benefitRow}>
-          {BENEFITS.map((benefit) => (
+          {ONBOARDING_OVERVIEW_COPY.benefits.map((benefit) => (
             <View key={benefit} style={styles.benefitPill}>
               <Text style={styles.benefitText}>{benefit}</Text>
             </View>
@@ -53,7 +30,7 @@ export default function OnboardingOverviewPanel({
       </View>
 
       <View style={styles.cardsContainer}>
-        {MODE_OPTIONS.map((option) => {
+        {ONBOARDING_OVERVIEW_COPY.modeOptions.map((option) => {
           const isActive = mode === option.mode;
 
           return (

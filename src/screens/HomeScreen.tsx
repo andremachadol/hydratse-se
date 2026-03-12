@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import AmbientBackdrop from '../components/AmbientBackdrop';
@@ -8,17 +8,28 @@ import HistoryInsightsCard from '../components/HistoryInsightsCard';
 import RoutineSettingsSheet from '../components/RoutineSettingsSheet';
 import HomeActionSection from '../components/HomeActionSection';
 import HomeHeader from '../components/HomeHeader';
+import { buildResetDayConfirmationDescriptor } from '../constants/interactionDescriptors.ts';
 import { COLORS } from '../constants/theme';
-import { type HistoryPeriod, useHomeDashboard } from '../hooks/useHomeDashboard';
+import { useResponsiveShellLayout } from '../hooks/useResponsiveShellLayout';
+import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useWaterTracker } from '../hooks/useWaterTracker';
+import type { TrackerMutationResult } from '../types';
+import { presentAppActionFeedback } from '../utils/appActionFeedback';
+import type { HistoryPeriod } from '../utils/homeDashboard.ts';
 import { formatLongDate } from '../utils/homePresentation';
+import { showAlertAsync } from '../utils/showAlertAsync';
+import { showConfirmAsync } from '../utils/showConfirmAsync';
 
 const COMPACT_MAX_WIDTH = 460;
 const MEDIUM_MAX_WIDTH = 760;
 const EXPANDED_MAX_WIDTH = 1120;
 
 export default function HomeScreen() {
-  const { width } = useWindowDimensions();
+  const layout = useResponsiveShellLayout({
+    compactMaxWidth: COMPACT_MAX_WIDTH,
+    mediumMaxWidth: MEDIUM_MAX_WIDTH,
+    expandedMaxWidth: EXPANDED_MAX_WIDTH,
+  });
   const {
     config,
     progress,
@@ -26,6 +37,7 @@ export default function HomeScreen() {
     nextDrinkAmount,
     goalReached,
     isLoading,
+    resetDayPrompt,
     saveConfig,
     addDrink,
     undoLastDrink,
@@ -33,14 +45,7 @@ export default function HomeScreen() {
   } = useWaterTracker();
   const [modalVisible, setModalVisible] = useState(false);
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>(7);
-  const isExpanded = width >= 840;
-  const isMedium = width >= 600 && width < 840;
-  const shellMaxWidth = isExpanded
-    ? EXPANDED_MAX_WIDTH
-    : isMedium
-      ? MEDIUM_MAX_WIDTH
-      : COMPACT_MAX_WIDTH;
-  const ringSize = isExpanded ? 300 : isMedium ? 270 : 240;
+  const ringSize = layout.tier === 'expanded' ? 300 : layout.tier === 'medium' ? 270 : 240;
   const dashboard = useHomeDashboard({
     progress,
     todayGoalMl,
@@ -48,6 +53,35 @@ export default function HomeScreen() {
     historyPeriod,
   });
   const remainingMl = Math.max(todayGoalMl - progress.consumedMl, 0);
+
+  const presentTrackerResult = useCallback(async (result: TrackerMutationResult) => {
+    await presentAppActionFeedback(result, {
+      presentDialog: showAlertAsync,
+    });
+  }, []);
+
+  const handleAddDrink = useCallback(async () => {
+    const result = await addDrink();
+    await presentTrackerResult(result);
+  }, [addDrink, presentTrackerResult]);
+
+  const handleUndoLastDrink = useCallback(async () => {
+    const result = await undoLastDrink();
+    await presentTrackerResult(result);
+  }, [presentTrackerResult, undoLastDrink]);
+
+  const handleResetConfirmed = useCallback(async () => {
+    const result = await resetDay();
+    await presentTrackerResult(result);
+  }, [presentTrackerResult, resetDay]);
+
+  const handleResetDay = useCallback(async () => {
+    const confirmed = await showConfirmAsync(buildResetDayConfirmationDescriptor(resetDayPrompt));
+
+    if (confirmed) {
+      await handleResetConfirmed();
+    }
+  }, [handleResetConfirmed, resetDayPrompt]);
 
   if (isLoading) {
     return (
@@ -58,18 +92,18 @@ export default function HomeScreen() {
   }
 
   const detailsSection = (
-    <View style={[styles.secondaryColumn, isExpanded && styles.secondaryColumnExpanded]}>
+    <View style={[styles.secondaryColumn, layout.isExpanded && styles.secondaryColumnExpanded]}>
       <DailyGoalSummaryCard
         config={config}
         todayGoalMl={todayGoalMl}
         consumedMl={progress.consumedMl}
         goalReached={goalReached}
         goalStatusLabel={dashboard.goalStatusLabel}
-        isExpanded={isExpanded}
+        isExpanded={layout.isExpanded}
         onOpenSettings={() => setModalVisible(true)}
       />
       <HistoryInsightsCard
-        isExpanded={isExpanded}
+        isExpanded={layout.isExpanded}
         historyPeriod={historyPeriod}
         historySummary={dashboard.historySummary}
         historyEntries={dashboard.historyEntries}
@@ -83,6 +117,26 @@ export default function HomeScreen() {
     </View>
   );
 
+  const actionSection = (
+    <HomeActionSection
+      consumedMl={progress.consumedMl}
+      todayGoalMl={todayGoalMl}
+      percentage={dashboard.percentage}
+      ringSize={ringSize}
+      remainingMl={remainingMl}
+      drinkCount={progress.drinks.length}
+      drinkSize={nextDrinkAmount}
+      goalReached={goalReached}
+      hasHistory={progress.drinks.length > 0}
+      isExpanded={layout.isExpanded}
+      onDrink={handleAddDrink}
+      onUndo={handleUndoLastDrink}
+      onReset={async () => {
+        await handleResetDay();
+      }}
+    />
+  );
+
   return (
     <LinearGradient colors={COLORS.backgroundGradient} style={styles.container}>
       <AmbientBackdrop variant="home" />
@@ -91,7 +145,7 @@ export default function HomeScreen() {
       <HomeHeader
         streak={progress.streak}
         dateLabel={formatLongDate(dashboard.todayDate)}
-        isExpanded={isExpanded}
+        isExpanded={layout.isExpanded}
         onOpenSettings={() => setModalVisible(true)}
       />
 
@@ -103,46 +157,18 @@ export default function HomeScreen() {
           <View
             style={[
               styles.screenShell,
-              { maxWidth: shellMaxWidth },
-              isExpanded && styles.screenShellExpanded,
+              { maxWidth: layout.shellMaxWidth },
+              layout.isExpanded && styles.screenShellExpanded,
             ]}
           >
-            {isExpanded ? (
+            {layout.isExpanded ? (
               <View style={styles.expandedLayout}>
-                <HomeActionSection
-                  consumedMl={progress.consumedMl}
-                  todayGoalMl={todayGoalMl}
-                  percentage={dashboard.percentage}
-                  ringSize={ringSize}
-                  remainingMl={remainingMl}
-                  drinkCount={progress.drinks.length}
-                  drinkSize={nextDrinkAmount}
-                  goalReached={goalReached}
-                  hasHistory={progress.drinks.length > 0}
-                  isExpanded={isExpanded}
-                  onDrink={addDrink}
-                  onUndo={undoLastDrink}
-                  onReset={resetDay}
-                />
+                {actionSection}
                 {detailsSection}
               </View>
             ) : (
               <>
-                <HomeActionSection
-                  consumedMl={progress.consumedMl}
-                  todayGoalMl={todayGoalMl}
-                  percentage={dashboard.percentage}
-                  ringSize={ringSize}
-                  remainingMl={remainingMl}
-                  drinkCount={progress.drinks.length}
-                  drinkSize={nextDrinkAmount}
-                  goalReached={goalReached}
-                  hasHistory={progress.drinks.length > 0}
-                  isExpanded={isExpanded}
-                  onDrink={addDrink}
-                  onUndo={undoLastDrink}
-                  onReset={resetDay}
-                />
+                {actionSection}
                 {detailsSection}
               </>
             )}

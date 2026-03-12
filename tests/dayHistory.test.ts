@@ -1,5 +1,5 @@
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
-import assert from 'node:assert/strict';
 import {
   archiveDayIfNeeded,
   buildDisplayHistory,
@@ -7,6 +7,7 @@ import {
   filterHistoryByPeriod,
   summarizeHistory,
 } from '../src/utils/dayHistory.ts';
+import { buildHomeDashboard } from '../src/utils/homeDashboard.ts';
 
 test('archiveDayIfNeeded ignora dia vazio e consumo zero', () => {
   assert.deepEqual(archiveDayIfNeeded(undefined, '', 300), []);
@@ -81,4 +82,77 @@ test('summarizeHistory calcula media, meta atual e tendencia do periodo', () => 
   assert.deepEqual(summary.lowestDay, { date: '2026-03-02', consumedMl: 900 });
   assert.equal(summary.trend, 'up');
   assert.equal(summary.trendDeltaMl, 450);
+});
+
+test('buildHomeDashboard monta resumo derivado e inclui consumo de hoje', () => {
+  const dashboard = buildHomeDashboard({
+    progress: {
+      consumedMl: 1800,
+      drinks: [],
+      streak: 3,
+      lastDrinkDate: '2026-03-12',
+      dayHistory: [
+        { date: '2026-03-11', consumedMl: 2200 },
+        { date: '2026-03-10', consumedMl: 1400 },
+      ],
+      bestDay: { date: '2026-03-11', consumedMl: 2200 },
+    },
+    todayGoalMl: 2000,
+    goalReached: false,
+    historyPeriod: 7,
+    todayDate: '2026-03-12',
+  });
+
+  assert.equal(dashboard.percentage, 90);
+  assert.equal(dashboard.goalStatusLabel, 'No ritmo');
+  assert.equal(dashboard.historyEntries.length, 3);
+  assert.equal(dashboard.historyReferenceMl, 2200);
+  assert.equal(dashboard.bestDayLabel, '11/03 \u2022 2.200 ml');
+  assert.deepEqual(dashboard.historyHighlights, [
+    {
+      label: 'M\u00e9dia',
+      value: '1.800 ml',
+      caption: '3 dia(s) ativos',
+    },
+    {
+      label: 'Na meta atual',
+      value: '1/3',
+      caption: '33% do per\u00edodo',
+    },
+    {
+      label: 'Tend\u00eancia',
+      value: 'Subindo',
+      caption: '+600 ml',
+    },
+    {
+      label: 'Menor dia',
+      value: '1.400 ml',
+      caption: '10/03',
+    },
+  ]);
+});
+
+test('buildHomeDashboard lida com periodo sem dados recentes', () => {
+  const dashboard = buildHomeDashboard({
+    progress: {
+      consumedMl: 0,
+      drinks: [],
+      streak: 0,
+      lastDrinkDate: '',
+      dayHistory: [{ date: '2026-02-01', consumedMl: 900 }],
+      bestDay: undefined,
+    },
+    todayGoalMl: 2500,
+    goalReached: false,
+    historyPeriod: 7,
+    todayDate: '2026-03-12',
+  });
+
+  assert.equal(dashboard.historyEntries.length, 0);
+  assert.equal(dashboard.historyReferenceMl, 2500);
+  assert.equal(dashboard.bestDayLabel, 'Nenhum dia registrado ainda');
+  assert.equal(dashboard.goalStatusLabel, 'Em andamento');
+  assert.equal(dashboard.historyHighlights[0]?.value, '\u2014');
+  assert.equal(dashboard.historyHighlights[1]?.caption, 'Sem base ainda');
+  assert.equal(dashboard.historyHighlights[3]?.caption, 'Sem registros');
 });

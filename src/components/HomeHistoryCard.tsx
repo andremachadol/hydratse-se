@@ -3,12 +3,12 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { BestDayRecord, DayHistoryEntry } from '../types/index.ts';
 import { COLORS, SHADOWS } from '../constants/theme';
 import type { HistorySummary } from '../utils/dayHistory.ts';
-import { formatHistoryDate, formatMl } from '../utils/homePresentation.ts';
 import {
   HISTORY_PERIODS,
   type HistoryPeriod,
   type HomeHistoryHighlight,
-} from '../hooks/useHomeDashboard.ts';
+} from '../utils/homeDashboard.ts';
+import { formatHistoryDate, formatMl } from '../utils/homePresentation.ts';
 
 interface HomeHistoryCardProps {
   isExpanded: boolean;

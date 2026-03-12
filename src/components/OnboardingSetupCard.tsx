@@ -1,16 +1,18 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { COLORS, SHADOWS } from '../constants/theme';
 import {
   DEFAULT_END_TIME,
   DEFAULT_INTERVAL_MINUTES,
   DEFAULT_START_TIME,
 } from '../constants/config';
+import { COLORS, SHADOWS } from '../constants/theme';
+import { ONBOARDING_SETUP_COPY } from '../constants/uiCopy';
 import type { CalculationMode } from '../types/index.ts';
 
 interface OnboardingSetupCardProps {
   mode: CalculationMode;
   weight: string;
+  autoGoalPreview: string;
   manualGoal: string;
   manualCup: string;
   inputAccessoryViewID: string;
@@ -23,6 +25,7 @@ interface OnboardingSetupCardProps {
 export default function OnboardingSetupCard({
   mode,
   weight,
+  autoGoalPreview,
   manualGoal,
   manualCup,
   inputAccessoryViewID,
@@ -31,31 +34,22 @@ export default function OnboardingSetupCard({
   onManualCupChange,
   onStart,
 }: OnboardingSetupCardProps) {
-  const autoGoalPreview =
-    weight.length > 0
-      ? `${(parseFloat(weight.replace(',', '.') || '0') * 35).toFixed(0)} ml`
-      : 'Preencha o peso';
-  const modeSummary =
-    mode === 'auto'
-      ? 'A meta será recalculada a partir do peso informado.'
-      : 'Você define a meta diária e o tamanho base de cada registro.';
+  const modeCopy = ONBOARDING_SETUP_COPY.modes[mode];
 
   return (
     <View style={styles.formColumn}>
       <View style={styles.formContainer}>
-        <Text style={styles.formEyebrow}>Configuração inicial</Text>
-        <Text style={styles.formTitle}>
-          {mode === 'auto' ? 'Informe seu peso' : 'Defina sua meta manual'}
-        </Text>
-        <Text style={styles.formDescription}>{modeSummary}</Text>
+        <Text style={styles.formEyebrow}>{ONBOARDING_SETUP_COPY.formEyebrow}</Text>
+        <Text style={styles.formTitle}>{modeCopy.title}</Text>
+        <Text style={styles.formDescription}>{modeCopy.summary}</Text>
 
         {mode === 'auto' ? (
           <View>
-            <Text style={styles.label}>Qual seu peso (kg)?</Text>
+            <Text style={styles.label}>{ONBOARDING_SETUP_COPY.auto.weightLabel}</Text>
             <TextInput
               key="input-weight"
               style={styles.input}
-              placeholder="Ex: 70,5"
+              placeholder={ONBOARDING_SETUP_COPY.auto.weightPlaceholder}
               placeholderTextColor={COLORS.textMuted}
               keyboardType="decimal-pad"
               value={weight}
@@ -64,18 +58,20 @@ export default function OnboardingSetupCard({
             />
 
             <View style={styles.previewCard}>
-              <Text style={styles.previewLabel}>Meta estimada</Text>
-              <Text style={styles.previewValue}>{autoGoalPreview}</Text>
+              <Text style={styles.previewLabel}>{ONBOARDING_SETUP_COPY.auto.previewLabel}</Text>
+              <Text style={styles.previewValue}>
+                {weight.length > 0 ? autoGoalPreview : ONBOARDING_SETUP_COPY.auto.previewEmpty}
+              </Text>
             </View>
           </View>
         ) : (
           <View style={styles.fieldGroup}>
             <View>
-              <Text style={styles.label}>Meta diária (ml)</Text>
+              <Text style={styles.label}>{ONBOARDING_SETUP_COPY.manual.goalLabel}</Text>
               <TextInput
                 key="input-goal"
                 style={styles.input}
-                placeholder="Ex: 3000"
+                placeholder={ONBOARDING_SETUP_COPY.manual.goalPlaceholder}
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="number-pad"
                 value={manualGoal}
@@ -86,12 +82,12 @@ export default function OnboardingSetupCard({
 
             <View>
               <Text style={[styles.label, styles.spacedLabel]}>
-                Tamanho do copo ou garrafa (ml)
+                {ONBOARDING_SETUP_COPY.manual.cupLabel}
               </Text>
               <TextInput
                 key="input-cup"
                 style={styles.input}
-                placeholder="Ex: 500"
+                placeholder={ONBOARDING_SETUP_COPY.manual.cupPlaceholder}
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="number-pad"
                 value={manualCup}
@@ -103,19 +99,21 @@ export default function OnboardingSetupCard({
         )}
 
         <View style={styles.setupSummary}>
-          <Text style={styles.setupSummaryTitle}>Ajustes padrão</Text>
+          <Text style={styles.setupSummaryTitle}>{ONBOARDING_SETUP_COPY.summaryTitle}</Text>
           <Text style={styles.setupSummaryText}>
-            Janela inicial: {DEFAULT_START_TIME} às {DEFAULT_END_TIME}
+            {ONBOARDING_SETUP_COPY.summaryWindowPrefix} {DEFAULT_START_TIME}{' '}
+            {ONBOARDING_SETUP_COPY.summaryWindowSeparator} {DEFAULT_END_TIME}
           </Text>
           <Text style={styles.setupSummaryText}>
-            Lembretes a cada {DEFAULT_INTERVAL_MINUTES} min, se a permissão for concedida
+            {ONBOARDING_SETUP_COPY.summaryReminderPrefix} {DEFAULT_INTERVAL_MINUTES}{' '}
+            {ONBOARDING_SETUP_COPY.summaryReminderSuffix}
           </Text>
         </View>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={onStart} activeOpacity={0.9}>
-        <Text style={styles.buttonText}>Começar jornada</Text>
-        <Text style={styles.buttonCaption}>Você pode revisar tudo nas configurações depois.</Text>
+        <Text style={styles.buttonText}>{ONBOARDING_SETUP_COPY.startButtonLabel}</Text>
+        <Text style={styles.buttonCaption}>{ONBOARDING_SETUP_COPY.startButtonCaption}</Text>
       </TouchableOpacity>
     </View>
   );

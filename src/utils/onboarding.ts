@@ -1,9 +1,12 @@
-import type { CalculationMode, DayProgress } from '../types/index.ts';
+import type { AppActionResult, CalculationMode, DayProgress } from '../types/index.ts';
 import {
   DEFAULT_END_TIME,
   DEFAULT_INTERVAL_MINUTES,
   DEFAULT_NOTIFICATIONS_ENABLED,
   DEFAULT_START_TIME,
+  MAX_WEIGHT,
+  MIN_WEIGHT,
+  ML_PER_KG,
 } from '../constants/config.ts';
 import { resolveUserConfigForm } from './configValidation.ts';
 
@@ -82,4 +85,77 @@ export const buildInitialProgress = (
     goalOverrideMl: todayGoalOverrideMl,
     goalOverrideDate: todayGoalOverrideMl ? todayDate : undefined,
   };
+};
+
+export interface WelcomeSetupDraft {
+  mode: CalculationMode;
+  weight: string;
+  manualGoal: string;
+  manualCup: string;
+}
+
+type SubmitWelcomeSetupDependencies = {
+  submitSetup: (
+    input: {
+      mode: CalculationMode;
+      finalWeight: number;
+      finalGoal: number;
+      finalCup: number;
+    },
+    options: {
+      askLateStartStrategy: () => Promise<'keep' | 'adjust'>;
+    },
+  ) => Promise<AppActionResult>;
+  askLateStartStrategy: () => Promise<'keep' | 'adjust'>;
+};
+
+export const submitWelcomeSetup = async (
+  draft: WelcomeSetupDraft,
+  dependencies: SubmitWelcomeSetupDependencies,
+): Promise<AppActionResult> => {
+  const resolvedInputs = resolveOnboardingInputs(
+    draft.mode,
+    draft.weight,
+    draft.manualGoal,
+    draft.manualCup,
+    ML_PER_KG,
+    {
+      minWeight: MIN_WEIGHT,
+      maxWeight: MAX_WEIGHT,
+    },
+  );
+
+  if (!resolvedInputs.ok) {
+    return {
+      ok: false,
+      notices: [],
+      errorTitle: 'Ops',
+      errorMessage: resolvedInputs.errorMessage,
+    };
+  }
+
+  try {
+    const result = await dependencies.submitSetup(
+      {
+        mode: draft.mode,
+        finalWeight: resolvedInputs.value.weight,
+        finalGoal: resolvedInputs.value.goalMl,
+        finalCup: resolvedInputs.value.cupMl,
+      },
+      { askLateStartStrategy: dependencies.askLateStartStrategy },
+    );
+
+    return {
+      ...result,
+      warningMessage: resolvedInputs.warningMessage,
+    };
+  } catch {
+    return {
+      ok: false,
+      notices: [],
+      errorTitle: 'Erro',
+      errorMessage: 'Não foi possível concluir a configuração inicial.',
+      warningMessage: resolvedInputs.warningMessage,
+    };
+  }
 };

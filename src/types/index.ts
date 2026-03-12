@@ -29,6 +29,11 @@ export interface BestDayRecord {
   consumedMl: number;
 }
 
+export interface UserNotice {
+  title: string;
+  message: string;
+}
+
 export interface DayProgress {
   consumedMl: number;
   drinks: Drink[];
@@ -48,6 +53,24 @@ export interface TrackerPersistence {
   persistConfig: (newConfig: UserConfig) => Promise<boolean>;
 }
 
+export type AppActionResult =
+  | {
+      ok: true;
+      notices: UserNotice[];
+      warningMessage?: string;
+    }
+  | {
+      ok: false;
+      notices: UserNotice[];
+      errorTitle: string;
+      errorMessage: string;
+      warningMessage?: string;
+    };
+
+export type TrackerMutationResult = AppActionResult & {
+  changed: boolean;
+};
+
 export interface WaterTrackerReturn {
   config: UserConfig;
   progress: DayProgress;
@@ -55,8 +78,9 @@ export interface WaterTrackerReturn {
   nextDrinkAmount: number;
   goalReached: boolean;
   isLoading: boolean;
-  saveConfig: (newConfig: UserConfig) => Promise<boolean>;
-  addDrink: () => Promise<void>;
-  undoLastDrink: () => Promise<void>;
-  resetDay: () => Promise<void>;
+  resetDayPrompt: UserNotice;
+  saveConfig: (newConfig: UserConfig) => Promise<TrackerMutationResult>;
+  addDrink: () => Promise<TrackerMutationResult>;
+  undoLastDrink: () => Promise<TrackerMutationResult>;
+  resetDay: () => Promise<TrackerMutationResult>;
 }

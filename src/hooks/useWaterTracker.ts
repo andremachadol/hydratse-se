@@ -1,20 +1,23 @@
 import { useCallback } from 'react';
-import { Alert, Platform } from 'react-native';
-import type { WaterTrackerReturn } from '../types';
+import {
+  addTrackerDrink,
+  resetTrackerDay,
+  saveTrackerConfig,
+  undoTrackerDrink,
+} from '../application/waterTrackerMutations.ts';
+import type { UserConfig, UserNotice, WaterTrackerReturn } from '../types';
 import { Logger } from '../services/logger';
 import { syncHydrationNotifications } from '../services/hydrationNotifications';
 import { ensureNotificationPermission } from '../utils/notifications';
 import { getTodayDate, getYesterdayDate } from '../utils/time';
-import {
-  buildPersistableConfig,
-  getSuggestedDrinkAmount,
-  getTodayGoalMl,
-  registerDrink,
-  resetTrackedDay,
-  undoTrackedDrink,
-} from '../utils/waterTrackerUseCases';
+import { getSuggestedDrinkAmount, getTodayGoalMl } from '../utils/waterTrackerUseCases';
+import { useTrackerNotificationBootstrap } from './useTrackerNotificationBootstrap';
 import { useTrackerPersistence } from './useTrackerPersistence';
-import type { UserConfig } from '../types';
+
+const RESET_DAY_PROMPT: UserNotice = {
+  title: 'Zerar o dia?',
+  message: 'O histórico de hoje será apagado.',
+};
 
 export const useWaterTracker = (): WaterTrackerReturn => {
   const { config, progress, isLoading, persistProgress, persistConfig } = useTrackerPersistence();
@@ -22,8 +25,14 @@ export const useWaterTracker = (): WaterTrackerReturn => {
   const today = getTodayDate();
   const todayGoalMl = getTodayGoalMl(config, progress, today);
   const goalReached = progress.consumedMl >= todayGoalMl;
+  const nextDrinkAmount = getSuggestedDrinkAmount(config, progress, today);
 
-  const nextDrinkAmount = getSuggestedDrinkAmount(config, progress, getTodayDate());
+  useTrackerNotificationBootstrap({
+    config,
+    progress,
+    todayGoalMl,
+    isLoading,
+  });
 
   const handleNotifications = useCallback(
     async (currentProgressMl: number, currentConfig: UserConfig, currentGoalMl: number) => {
@@ -32,136 +41,55 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     [],
   );
 
-  const showProgressSaveError = useCallback(() => {
-    Alert.alert('Erro', 'Não foi possível salvar seu progresso agora.');
-  }, []);
+  const trackerDependencies = {
+    persistConfig,
+    persistProgress,
+    requestNotificationPermission: ensureNotificationPermission,
+    syncNotifications: handleNotifications,
+    logger: Logger,
+  };
 
-  const resolveNotificationsForConfig = async (
-    candidateConfig: UserConfig,
-  ): Promise<UserConfig> => {
-    if (!candidateConfig.notificationsEnabled) {
-      return candidateConfig;
-    }
-
-    const granted = await ensureNotificationPermission();
-    if (granted) {
-      return candidateConfig;
-    }
-
-    Alert.alert(
-      'Lembretes desativados',
-      'A permissão de notificações não foi concedida. Você pode ativar depois nas configurações do dispositivo.',
+  const saveConfigData = async (newConfig: UserConfig) =>
+    saveTrackerConfig(
+      {
+        newConfig,
+        progress,
+        today: getTodayDate(),
+      },
+      trackerDependencies,
     );
 
-    return {
-      ...candidateConfig,
-      notificationsEnabled: false,
-    };
-  };
+  const addDrink = async () =>
+    addTrackerDrink(
+      {
+        config,
+        progress,
+        amountToDrink: nextDrinkAmount,
+        today: getTodayDate(),
+        yesterday: getYesterdayDate(),
+      },
+      trackerDependencies,
+    );
 
-  const saveConfigData = async (newConfig: UserConfig): Promise<boolean> => {
-    let updatedConfig = buildPersistableConfig(newConfig);
-    updatedConfig = await resolveNotificationsForConfig(updatedConfig);
+  const undoLastDrink = async () =>
+    undoTrackerDrink(
+      {
+        config,
+        progress,
+        today: getTodayDate(),
+      },
+      trackerDependencies,
+    );
 
-    const saved = await persistConfig(updatedConfig);
-    if (!saved) {
-      Alert.alert('Erro', 'Não foi possível salvar as configurações.');
-      return false;
-    }
-
-    Logger.configSaved(updatedConfig.weight, updatedConfig.dailyGoalMl);
-    const currentGoalMl = getTodayGoalMl(updatedConfig, progress, getTodayDate());
-    await handleNotifications(progress.consumedMl, updatedConfig, currentGoalMl);
-    return true;
-  };
-
-  const addDrink = async () => {
-    if (goalReached || nextDrinkAmount <= 0) return;
-
-    const result = registerDrink({
-      progress,
-      config,
-      amountToDrink: nextDrinkAmount,
-      today: getTodayDate(),
-      yesterday: getYesterdayDate(),
-    });
-
-    if (result.isNewDay) {
-      if (progress.lastDrinkDate === getYesterdayDate()) {
-        Logger.streakUpdated(result.previousStreak, result.newProgress.streak, 'continued');
-      } else {
-        Logger.streakUpdated(result.previousStreak, result.newProgress.streak, 'reset');
-      }
-    }
-
-    const saved = await persistProgress(result.newProgress);
-    if (!saved) {
-      showProgressSaveError();
-      return;
-    }
-
-    Logger.drink(result.amountToDrink, result.newProgress.consumedMl, result.activeGoalMl);
-
-    if (result.reachedGoalToday) {
-      Logger.goalReached(result.newProgress.consumedMl, result.activeGoalMl);
-      Alert.alert('Meta batida!', 'Você atingiu 100% da sua hidratação hoje.');
-    }
-
-    if (result.bestDayEvent) {
-      Alert.alert(
-        result.bestDayEvent.kind === 'surpassed' ? 'Novo melhor dia!' : 'Melhor dia igualado!',
-        result.bestDayEvent.kind === 'surpassed'
-          ? `Você bateu seu recorde com ${result.newProgress.consumedMl} ml hoje.`
-          : `Você igualou seu recorde de ${result.bestDayEvent.previousBestDay.consumedMl} ml.`,
-      );
-    }
-
-    await handleNotifications(result.newProgress.consumedMl, config, result.activeGoalMl);
-  };
-
-  const undoLastDrink = async () => {
-    const undoResult = undoTrackedDrink(progress);
-    if (!undoResult) return;
-
-    const saved = await persistProgress(undoResult.newProgress);
-    if (!saved) {
-      showProgressSaveError();
-      return;
-    }
-
-    Logger.undo(undoResult.removedDrink.amount, undoResult.newProgress.consumedMl);
-
-    const currentGoalMl = getTodayGoalMl(config, undoResult.newProgress, getTodayDate());
-    await handleNotifications(undoResult.newProgress.consumedMl, config, currentGoalMl);
-  };
-
-  const resetDay = async () => {
-    const doReset = async () => {
-      const previousTotal = progress.consumedMl;
-      const newProgress = resetTrackedDay(progress);
-      const saved = await persistProgress(newProgress);
-      if (!saved) {
-        showProgressSaveError();
-        return;
-      }
-
-      Logger.reset(previousTotal);
-
-      const currentGoalMl = getTodayGoalMl(config, newProgress, getTodayDate());
-      await handleNotifications(0, config, currentGoalMl);
-    };
-
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Zerar o dia?');
-      if (confirmed) await doReset();
-      return;
-    }
-
-    Alert.alert('Zerar o dia?', 'O histórico de hoje será apagado.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sim, zerar', style: 'destructive', onPress: () => void doReset() },
-    ]);
-  };
+  const resetDay = async () =>
+    resetTrackerDay(
+      {
+        config,
+        progress,
+        today: getTodayDate(),
+      },
+      trackerDependencies,
+    );
 
   return {
     config,
@@ -170,6 +98,7 @@ export const useWaterTracker = (): WaterTrackerReturn => {
     nextDrinkAmount,
     goalReached,
     isLoading,
+    resetDayPrompt: RESET_DAY_PROMPT,
     saveConfig: saveConfigData,
     addDrink,
     undoLastDrink,

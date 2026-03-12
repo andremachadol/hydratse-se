@@ -1,14 +1,20 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { BestDayRecord, DayHistoryEntry } from '../types/index.ts';
 import { COLORS, SHADOWS } from '../constants/theme';
+import type { BestDayRecord, DayHistoryEntry } from '../types/index.ts';
 import type { HistorySummary } from '../utils/dayHistory.ts';
-import { formatHistoryDate, formatMl } from '../utils/homePresentation.ts';
 import {
   HISTORY_PERIODS,
   type HistoryPeriod,
   type HomeHistoryHighlight,
-} from '../hooks/useHomeDashboard.ts';
+} from '../utils/homeDashboard.ts';
+import {
+  buildHistoryRows,
+  getHistoryEmptyMessage,
+  getHistoryFilterAccessibilityLabel,
+  getHistorySubtitle,
+  getHistoryTotalLabel,
+} from '../utils/historyPresentation.ts';
 
 interface HistoryInsightsCardProps {
   isExpanded: boolean;
@@ -35,15 +41,20 @@ export default function HistoryInsightsCard({
   historyHighlights,
   onChangePeriod,
 }: HistoryInsightsCardProps) {
+  const historyRows = buildHistoryRows({
+    historyEntries,
+    bestDay,
+    todayDate,
+    historyReferenceMl,
+  });
+
   return (
     <View style={styles.historyCard}>
       <View style={[styles.historyHeader, isExpanded && styles.historyHeaderExpanded]}>
         <View style={styles.historyHeaderText}>
           <Text style={styles.historyTitle}>Consumo recente</Text>
           <Text style={styles.historySubtitle}>
-            {historySummary.trackedDays > 0
-              ? `${historySummary.trackedDays} dia(s) com registro neste filtro`
-              : `Sem dados nos últimos ${historyPeriod} dias`}
+            {getHistorySubtitle(historySummary.trackedDays, historyPeriod)}
           </Text>
         </View>
         <View style={[styles.bestDaySummary, isExpanded && styles.bestDaySummaryExpanded]}>
@@ -61,7 +72,7 @@ export default function HistoryInsightsCard({
               style={[styles.periodButton, isSelected && styles.periodButtonActive]}
               onPress={() => onChangePeriod(period)}
               accessibilityRole="button"
-              accessibilityLabel={`Filtrar histórico para ${period} dias`}
+              accessibilityLabel={getHistoryFilterAccessibilityLabel(period)}
               activeOpacity={0.85}
             >
               <Text style={[styles.periodText, isSelected && styles.periodTextActive]}>
@@ -72,9 +83,9 @@ export default function HistoryInsightsCard({
         })}
       </View>
 
-      {historyEntries.length === 0 ? (
+      {historyRows.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.historyEmpty}>Nenhum registro apareceu nesta janela ainda.</Text>
+          <Text style={styles.historyEmpty}>{getHistoryEmptyMessage()}</Text>
         </View>
       ) : (
         <>
@@ -94,49 +105,39 @@ export default function HistoryInsightsCard({
           <View style={styles.historyListHeader}>
             <Text style={styles.historyListTitle}>Linha do tempo</Text>
             <Text style={styles.historyListCaption}>
-              Total no período: {formatMl(historySummary.totalMl)}
+              {getHistoryTotalLabel(historySummary.totalMl)}
             </Text>
           </View>
 
           <View style={styles.historyList}>
-            {historyEntries.map((entry) => {
-              const isBestDay =
-                bestDay?.date === entry.date && bestDay.consumedMl === entry.consumedMl;
-              const isToday = entry.date === todayDate;
-              const fillWidth =
-                `${Math.min(100, Math.round((entry.consumedMl / historyReferenceMl) * 100))}%` as const;
-
-              return (
-                <View
-                  key={entry.date}
-                  style={[
-                    styles.historyRow,
-                    isToday && styles.historyRowToday,
-                    isBestDay && styles.historyRowBest,
-                  ]}
-                >
-                  <View style={styles.historyRowTop}>
-                    <Text style={styles.historyDate}>
-                      {isToday ? 'Hoje' : formatHistoryDate(entry.date)}
-                    </Text>
-                    <View style={styles.historyValueWrap}>
-                      {isBestDay ? <Text style={styles.bestDayBadge}>Melhor dia</Text> : null}
-                      <Text style={styles.historyValue}>{formatMl(entry.consumedMl)}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.historyBarTrack}>
-                    <View
-                      style={[
-                        styles.historyBarFill,
-                        { width: fillWidth },
-                        isToday && styles.historyBarFillToday,
-                        isBestDay && styles.historyBarFillBest,
-                      ]}
-                    />
+            {historyRows.map((row) => (
+              <View
+                key={row.key}
+                style={[
+                  styles.historyRow,
+                  row.isToday && styles.historyRowToday,
+                  row.isBestDay && styles.historyRowBest,
+                ]}
+              >
+                <View style={styles.historyRowTop}>
+                  <Text style={styles.historyDate}>{row.dateLabel}</Text>
+                  <View style={styles.historyValueWrap}>
+                    {row.isBestDay ? <Text style={styles.bestDayBadge}>Melhor dia</Text> : null}
+                    <Text style={styles.historyValue}>{row.valueLabel}</Text>
                   </View>
                 </View>
-              );
-            })}
+                <View style={styles.historyBarTrack}>
+                  <View
+                    style={[
+                      styles.historyBarFill,
+                      { width: row.fillWidth },
+                      row.isToday && styles.historyBarFillToday,
+                      row.isBestDay && styles.historyBarFillBest,
+                    ]}
+                  />
+                </View>
+              </View>
+            ))}
           </View>
         </>
       )}

@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { completeOnboardingSetup } from '../src/application/onboardingFlow.ts';
 import type { DayProgress, UserConfig } from '../src/types/index.ts';
@@ -88,5 +88,6 @@ test('completeOnboardingSetup retorna erro quando saveConfig falha', async () =>
     assert.fail('resultado deveria falhar');
   }
 
+  assert.equal(result.errorTitle, 'Erro');
   assert.equal(result.errorMessage, 'Não foi possível salvar suas configurações. Tente novamente.');
 });

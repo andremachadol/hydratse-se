@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DayProgress, TrackerPersistence, UserConfig } from '../types';
 import * as Storage from '../services/storage';
-import { syncHydrationNotifications } from '../services/hydrationNotifications';
 import { getTodayDate } from '../utils/time';
 import {
   createDefaultConfig,
   createEmptyProgress,
-  getTodayGoalMl,
   loadTrackerState,
 } from '../utils/waterTrackerUseCases';
 
@@ -56,17 +54,6 @@ export const useTrackerPersistence = (): TrackerPersistence => {
           console.error('Falha ao persistir progresso normalizado');
         }
       }
-
-      const currentGoalMl = getTodayGoalMl(
-        loadedState.config,
-        loadedState.progress,
-        getTodayDate(),
-      );
-      await syncHydrationNotifications(
-        loadedState.progress.consumedMl,
-        currentGoalMl,
-        loadedState.config,
-      );
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {

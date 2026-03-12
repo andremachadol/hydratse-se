@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -15,19 +14,17 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { CalculationMode, UserConfig } from '../types';
 import { COLORS, SHADOWS } from '../constants/theme';
-import {
-  formatIntegerInput,
-  formatTimeInput,
-  formatWeightInput,
-  resolveUserConfigForm,
-} from '../utils/configValidation';
+import { ROUTINE_SETTINGS_COPY } from '../constants/uiCopy';
+import { useRoutineSettingsController } from '../hooks/useRoutineSettingsController';
+import type { TrackerMutationResult, UserConfig } from '../types';
+import { presentAppActionFeedback } from '../utils/appActionFeedback';
+import { showAlertAsync } from '../utils/showAlertAsync';
 
 interface RoutineSettingsSheetProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (newConfig: UserConfig) => Promise<boolean>;
+  onSave: (newConfig: UserConfig) => Promise<TrackerMutationResult>;
   currentConfig: UserConfig;
 }
 
@@ -38,62 +35,40 @@ export default function RoutineSettingsSheet({
   currentConfig,
 }: RoutineSettingsSheetProps) {
   const { width, height } = useWindowDimensions();
-  const [mode, setMode] = useState<CalculationMode>('auto');
-  const [weight, setWeight] = useState('');
-  const [manualGoal, setManualGoal] = useState('');
-  const [manualCup, setManualCup] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [interval, setInterval] = useState(60);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    setMode(currentConfig.mode || 'auto');
-    setWeight(currentConfig.weight.toString());
-    setManualCup(currentConfig.manualCupSize?.toString() || '500');
-    setManualGoal(currentConfig.dailyGoalMl.toString());
-    setStartTime(currentConfig.startTime);
-    setEndTime(currentConfig.endTime);
-    setInterval(currentConfig.intervalMinutes);
-    setNotificationsEnabled(currentConfig.notificationsEnabled ?? true);
-  }, [visible, currentConfig]);
-
-  const handleSave = async () => {
-    const resolvedConfig = resolveUserConfigForm({
-      mode,
-      weightInput: weight,
-      manualGoalInput: manualGoal,
-      manualCupInput: manualCup,
-      startTime,
-      endTime,
-      intervalMinutes: interval,
-      notificationsEnabled,
-    });
-
-    if (!resolvedConfig.ok) {
-      Alert.alert('Erro', resolvedConfig.errorMessage);
-      return;
-    }
-
-    if (resolvedConfig.warningMessage) {
-      Alert.alert('Atenção', resolvedConfig.warningMessage);
-    }
-
-    try {
-      const saved = await onSave(resolvedConfig.value);
-      if (saved) {
-        onClose();
-      }
-    } catch {
-      Alert.alert('Erro', 'Não foi possível atualizar as configurações.');
-    }
-  };
-
   const modalWidth = Math.min(width - 24, width >= 840 ? 620 : 480);
   const maxModalHeight = Math.min(height - 28, 760);
-  const autoGoalPreview = `${(parseFloat(weight.replace(',', '.') || '0') * 35).toFixed(0)} ml`;
+  const {
+    mode,
+    weight,
+    manualGoal,
+    manualCup,
+    startTime,
+    endTime,
+    interval,
+    notificationsEnabled,
+    autoGoalPreview,
+    setMode,
+    handleWeightChange,
+    handleManualGoalChange,
+    handleManualCupChange,
+    handleStartTimeChange,
+    handleEndTimeChange,
+    handleIntervalChange,
+    handleNotificationsChange,
+    handleSave,
+  } = useRoutineSettingsController({
+    visible,
+    currentConfig,
+    onSave,
+  });
+
+  const handleSubmit = async () => {
+    const result = await handleSave();
+    await presentAppActionFeedback(result, {
+      presentDialog: showAlertAsync,
+      onSuccess: onClose,
+    });
+  };
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
@@ -103,11 +78,11 @@ export default function RoutineSettingsSheet({
             <View style={[styles.modalView, { width: modalWidth, maxHeight: maxModalHeight }]}>
               <View style={styles.header}>
                 <View style={styles.headerCopy}>
-                  <Text style={styles.headerEyebrow}>Ajustes da rotina</Text>
-                  <Text style={styles.modalTitle}>Refine sua hidratação</Text>
+                  <Text style={styles.headerEyebrow}>{ROUTINE_SETTINGS_COPY.headerEyebrow}</Text>
+                  <Text style={styles.modalTitle}>{ROUTINE_SETTINGS_COPY.headerTitle}</Text>
                 </View>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.85}>
-                  <Text style={styles.closeText}>Fechar</Text>
+                  <Text style={styles.closeText}>{ROUTINE_SETTINGS_COPY.closeButtonLabel}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -117,7 +92,7 @@ export default function RoutineSettingsSheet({
                 keyboardShouldPersistTaps="handled"
               >
                 <View style={styles.sectionCard}>
-                  <Text style={styles.sectionTitle}>Modo de cálculo</Text>
+                  <Text style={styles.sectionTitle}>{ROUTINE_SETTINGS_COPY.modeSectionTitle}</Text>
                   <View style={styles.tabContainer}>
                     <TouchableOpacity
                       style={[styles.tabButton, mode === 'auto' && styles.tabActive]}
@@ -125,7 +100,7 @@ export default function RoutineSettingsSheet({
                       activeOpacity={0.85}
                     >
                       <Text style={[styles.tabText, mode === 'auto' && styles.tabTextActive]}>
-                        Automático
+                        {ROUTINE_SETTINGS_COPY.modeOptions.auto}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -134,48 +109,52 @@ export default function RoutineSettingsSheet({
                       activeOpacity={0.85}
                     >
                       <Text style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>
-                        Manual
+                        {ROUTINE_SETTINGS_COPY.modeOptions.manual}
                       </Text>
                     </TouchableOpacity>
                   </View>
 
                   {mode === 'auto' ? (
                     <View>
-                      <Text style={styles.label}>Seu peso (kg)</Text>
+                      <Text style={styles.label}>{ROUTINE_SETTINGS_COPY.weightLabel}</Text>
                       <TextInput
                         style={styles.input}
                         keyboardType="decimal-pad"
                         value={weight}
-                        onChangeText={(text) => setWeight(formatWeightInput(text))}
-                        placeholder="Ex: 70,5"
+                        onChangeText={handleWeightChange}
+                        placeholder={ROUTINE_SETTINGS_COPY.weightPlaceholder}
                         placeholderTextColor={COLORS.textMuted}
                       />
                       <View style={styles.inlineInfoCard}>
-                        <Text style={styles.inlineInfoLabel}>Meta estimada</Text>
+                        <Text style={styles.inlineInfoLabel}>
+                          {ROUTINE_SETTINGS_COPY.autoGoalLabel}
+                        </Text>
                         <Text style={styles.inlineInfoValue}>{autoGoalPreview}</Text>
                       </View>
                     </View>
                   ) : (
                     <View style={styles.fieldStack}>
                       <View>
-                        <Text style={styles.label}>Meta diária (ml)</Text>
+                        <Text style={styles.label}>{ROUTINE_SETTINGS_COPY.manualGoalLabel}</Text>
                         <TextInput
                           style={styles.input}
                           keyboardType="number-pad"
                           value={manualGoal}
-                          onChangeText={(text) => setManualGoal(formatIntegerInput(text))}
-                          placeholder="3000"
+                          onChangeText={handleManualGoalChange}
+                          placeholder={ROUTINE_SETTINGS_COPY.manualGoalPlaceholder}
                           placeholderTextColor={COLORS.textMuted}
                         />
                       </View>
                       <View>
-                        <Text style={[styles.label, styles.spacedLabel]}>Copo ou garrafa (ml)</Text>
+                        <Text style={[styles.label, styles.spacedLabel]}>
+                          {ROUTINE_SETTINGS_COPY.manualCupLabel}
+                        </Text>
                         <TextInput
                           style={styles.input}
                           keyboardType="number-pad"
                           value={manualCup}
-                          onChangeText={(text) => setManualCup(formatIntegerInput(text))}
-                          placeholder="500"
+                          onChangeText={handleManualCupChange}
+                          placeholder={ROUTINE_SETTINGS_COPY.manualCupPlaceholder}
                           placeholderTextColor={COLORS.textMuted}
                         />
                       </View>
@@ -186,48 +165,50 @@ export default function RoutineSettingsSheet({
                 <View style={styles.sectionCard}>
                   <View style={styles.switchRow}>
                     <View style={styles.switchCopy}>
-                      <Text style={styles.sectionTitle}>Lembretes</Text>
+                      <Text style={styles.sectionTitle}>
+                        {ROUTINE_SETTINGS_COPY.remindersTitle}
+                      </Text>
                       <Text style={styles.sectionDescription}>
-                        Ative para manter a rotina distribuída ao longo do dia.
+                        {ROUTINE_SETTINGS_COPY.remindersDescription}
                       </Text>
                     </View>
                     <Switch
                       trackColor={{ false: COLORS.switchTrackOff, true: COLORS.primaryLight }}
                       thumbColor={notificationsEnabled ? COLORS.primary : COLORS.switchThumbOff}
-                      onValueChange={setNotificationsEnabled}
+                      onValueChange={handleNotificationsChange}
                       value={notificationsEnabled}
                     />
                   </View>
 
                   <View style={styles.scheduleRow}>
                     <View style={styles.scheduleField}>
-                      <Text style={styles.label}>Início do dia</Text>
+                      <Text style={styles.label}>{ROUTINE_SETTINGS_COPY.startTimeLabel}</Text>
                       <TextInput
                         style={styles.input}
                         value={startTime}
-                        onChangeText={(text) => setStartTime(formatTimeInput(text))}
+                        onChangeText={handleStartTimeChange}
                         keyboardType="number-pad"
                         maxLength={5}
-                        placeholder="08:00"
+                        placeholder={ROUTINE_SETTINGS_COPY.startTimePlaceholder}
                         placeholderTextColor={COLORS.textMuted}
                       />
                     </View>
                     <View style={styles.scheduleField}>
-                      <Text style={styles.label}>Fim do dia</Text>
+                      <Text style={styles.label}>{ROUTINE_SETTINGS_COPY.endTimeLabel}</Text>
                       <TextInput
                         style={styles.input}
                         value={endTime}
-                        onChangeText={(text) => setEndTime(formatTimeInput(text))}
+                        onChangeText={handleEndTimeChange}
                         keyboardType="number-pad"
                         maxLength={5}
-                        placeholder="18:00"
+                        placeholder={ROUTINE_SETTINGS_COPY.endTimePlaceholder}
                         placeholderTextColor={COLORS.textMuted}
                       />
                     </View>
                   </View>
 
                   <Text style={[styles.label, !notificationsEnabled && styles.disabledLabel]}>
-                    Intervalo entre lembretes
+                    {ROUTINE_SETTINGS_COPY.intervalLabel}
                   </Text>
                   <View style={styles.intervalContainer}>
                     {[30, 60].map((minutes) => (
@@ -238,7 +219,7 @@ export default function RoutineSettingsSheet({
                           interval === minutes && styles.intervalBtnSelected,
                           !notificationsEnabled && styles.intervalBtnDisabled,
                         ]}
-                        onPress={() => notificationsEnabled && setInterval(minutes)}
+                        onPress={() => notificationsEnabled && handleIntervalChange(minutes)}
                         disabled={!notificationsEnabled}
                         activeOpacity={0.85}
                       >
@@ -248,7 +229,7 @@ export default function RoutineSettingsSheet({
                             interval === minutes && styles.intervalTextSelected,
                           ]}
                         >
-                          {minutes} min
+                          {minutes} {ROUTINE_SETTINGS_COPY.intervalUnit}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -262,14 +243,14 @@ export default function RoutineSettingsSheet({
                   onPress={onClose}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.buttonText}>Cancelar</Text>
+                  <Text style={styles.buttonText}>{ROUTINE_SETTINGS_COPY.cancelButtonLabel}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.button, styles.buttonSave]}
-                  onPress={() => void handleSave()}
+                  onPress={() => void handleSubmit()}
                   activeOpacity={0.9}
                 >
-                  <Text style={styles.buttonText}>Salvar ajustes</Text>
+                  <Text style={styles.buttonText}>{ROUTINE_SETTINGS_COPY.saveButtonLabel}</Text>
                 </TouchableOpacity>
               </View>
             </View>

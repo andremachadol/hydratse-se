@@ -7,15 +7,15 @@ import * as Storage from '../services/storage.ts';
 import { ensureNotificationPermission } from '../utils/notifications.ts';
 import { getTodayDate } from '../utils/time.ts';
 
-type UseOnboardingFlowOptions = {
+type SubmitSetupOptions = {
   askLateStartStrategy: () => Promise<'keep' | 'adjust'>;
 };
 
-export const useOnboardingFlow = ({ askLateStartStrategy }: UseOnboardingFlowOptions) => {
+export const useOnboardingFlow = () => {
   const submitSetup = useCallback(
-    async (input: CompleteOnboardingSetupInput) => {
+    async (input: CompleteOnboardingSetupInput, options: SubmitSetupOptions) => {
       return completeOnboardingSetup(input, {
-        requestLateStartStrategy: askLateStartStrategy,
+        requestLateStartStrategy: options.askLateStartStrategy,
         requestNotificationPermission: ensureNotificationPermission,
         saveConfig: Storage.saveConfig,
         saveProgress: Storage.saveProgress,
@@ -23,7 +23,7 @@ export const useOnboardingFlow = ({ askLateStartStrategy }: UseOnboardingFlowOpt
         todayDate: getTodayDate(),
       });
     },
-    [askLateStartStrategy],
+    [],
   );
 
   return { submitSetup };

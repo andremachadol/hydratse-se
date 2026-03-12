@@ -1,4 +1,10 @@
-import type { CalculationMode, DayProgress, UserConfig } from '../types/index.ts';
+import type {
+  AppActionResult,
+  CalculationMode,
+  DayProgress,
+  UserConfig,
+  UserNotice,
+} from '../types/index.ts';
 import {
   DEFAULT_END_TIME,
   DEFAULT_INTERVAL_MINUTES,
@@ -9,11 +15,6 @@ import {
 import { calculateSafeGoalForRemainingWindow, isLateStartToday } from '../utils/dailyGoal.ts';
 import { buildInitialProgress } from '../utils/onboarding.ts';
 import { timeToMinutes } from '../utils/time.ts';
-
-export interface OnboardingNotice {
-  title: string;
-  message: string;
-}
 
 export type CompleteOnboardingSetupInput = {
   mode: CalculationMode;
@@ -31,22 +32,11 @@ type CompleteOnboardingSetupDependencies = {
   todayDate: string;
 };
 
-type CompleteOnboardingSetupResult =
-  | {
-      ok: true;
-      notices: OnboardingNotice[];
-    }
-  | {
-      ok: false;
-      errorMessage: string;
-      notices: OnboardingNotice[];
-    };
-
 export const completeOnboardingSetup = async (
   input: CompleteOnboardingSetupInput,
   dependencies: CompleteOnboardingSetupDependencies,
-): Promise<CompleteOnboardingSetupResult> => {
-  const notices: OnboardingNotice[] = [];
+): Promise<AppActionResult> => {
+  const notices: UserNotice[] = [];
   const nowMins = dependencies.now.getHours() * 60 + dependencies.now.getMinutes();
   const startMins = timeToMinutes(DEFAULT_START_TIME);
   const endMins = timeToMinutes(DEFAULT_END_TIME);
@@ -66,12 +56,13 @@ export const completeOnboardingSetup = async (
         todayGoalOverrideMl = safeGoalToday;
         notices.push({
           title: 'Meta de hoje ajustada',
-          message: `Hoje sua meta será ${safeGoalToday} ml. Amanhã volta para a meta normal automaticamente.`,
+          message: `Hoje sua meta ser\u00e1 ${safeGoalToday} ml. Amanh\u00e3 volta para a meta normal automaticamente.`,
         });
       } else {
         notices.push({
-          title: 'Sem ajuste necessário',
-          message: 'Não foi necessário ajustar a meta de hoje. A meta normal será mantida.',
+          title: 'Sem ajuste necess\u00e1rio',
+          message:
+            'N\u00e3o foi necess\u00e1rio ajustar a meta de hoje. A meta normal ser\u00e1 mantida.',
         });
       }
     }
@@ -85,7 +76,7 @@ export const completeOnboardingSetup = async (
       notices.push({
         title: 'Lembretes desativados',
         message:
-          'A permissão de notificações não foi concedida. Você pode ativar depois nas configurações do dispositivo.',
+          'A permiss\u00e3o de notifica\u00e7\u00f5es n\u00e3o foi concedida. Voc\u00ea pode ativar depois nas configura\u00e7\u00f5es do dispositivo.',
       });
     }
   }
@@ -105,8 +96,10 @@ export const completeOnboardingSetup = async (
   if (!savedConfig) {
     return {
       ok: false,
-      errorMessage: 'Não foi possível salvar suas configurações. Tente novamente.',
       notices,
+      errorTitle: 'Erro',
+      errorMessage:
+        'N\u00e3o foi poss\u00edvel salvar suas configura\u00e7\u00f5es. Tente novamente.',
     };
   }
 
@@ -115,8 +108,9 @@ export const completeOnboardingSetup = async (
   if (!savedProgress) {
     return {
       ok: false,
-      errorMessage: 'Não foi possível preparar o progresso inicial. Tente novamente.',
       notices,
+      errorTitle: 'Erro',
+      errorMessage: 'N\u00e3o foi poss\u00edvel preparar o progresso inicial. Tente novamente.',
     };
   }
 
