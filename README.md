@@ -101,7 +101,7 @@ Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 
 ### Requisitos
 
-- Node.js com suporte a `--experimental-strip-types`
+- Node.js `22` ou superior (`.nvmrc` aponta para a versao recomendada)
 - npm
 - Android Studio ou emulador/dispositivo compatível
 
@@ -111,42 +111,85 @@ Esse ajuste vira um override diário e expira automaticamente no dia seguinte.
 npm install
 ```
 
-### Desenvolvimento com Metro
+### Diagnóstico rápido
+
+```bash
+npm run doctor
+```
+
+### Fluxo recomendado no Android
+
+1. Na primeira execução, ou sempre que houver mudança nativa, rode:
+
+```bash
+npm run android:run
+```
+
+2. No dia a dia, com o app de desenvolvimento ja instalado, use:
+
+```bash
+npm run dev:android
+```
+
+3. Se o Metro ficar inconsistente, limpe o cache:
+
+```bash
+npm run dev:clear
+```
+
+Depois da primeira execução, mudanças em `ts`, `tsx` e `js` entram por Fast Refresh.
+
+### Fluxo alternativo com Expo padrão
+
+Se voce quiser subir apenas o bundler sem acoplar ao dev client:
 
 ```bash
 npm run start
 ```
 
-### Fluxo recomendado no Android Studio
-
-1. Abra a pasta `android/` no Android Studio.
-2. Inicie um emulador ou conecte um dispositivo.
-3. Na raiz do projeto, rode `npm run start`.
-4. No Android Studio, execute o app em `debug`.
-
-Depois da primeira execução, mudanças em `ts`, `tsx` e `js` entram por Fast Refresh.
-
 ### Scripts disponíveis
 
 - `npm run start`
+- `npm run start:clear`
+- `npm run dev`
+- `npm run dev:clear`
+- `npm run dev:android`
 - `npm run android`
+- `npm run android:run`
 - `npm run ios`
 - `npm run web`
+- `npm run doctor`
 - `npm run lint`
 - `npm run lint:fix`
 - `npm run format`
 - `npm run format:check`
 - `npm run typecheck`
+- `npm run test:unit`
 - `npm run test`
 - `npm run test:watch`
 - `npm run check`
+- `npm run verify`
 
 ## Testes e qualidade
 
 O projeto usa o test runner nativo do Node com TypeScript via `--experimental-strip-types`.
 
+### Testes rapidos
+
 ```bash
-npm run check
+npm run test
+```
+
+### Testes em watch
+
+```bash
+npm run test:watch
+```
+
+### Verificacao completa
+
+```bash
+npm run verify
 ```
 
 Esse comando executa:
@@ -159,7 +202,7 @@ Esse comando executa:
 ## CI
 
 - GitHub Actions em `.github/workflows/ci.yml`
-- Executa `npm run check` em `push` para `main` e em `pull_request`
+- Executa `npm run verify` em `push` para `main` e em `pull_request`
 
 ## Build
 

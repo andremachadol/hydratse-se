@@ -5,16 +5,24 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
+    "start:clear": "expo start --clear",
+    "dev": "expo start --dev-client",
+    "dev:clear": "expo start --dev-client --clear",
+    "dev:android": "expo start --android --dev-client",
     "android": "expo start --android",
+    "android:run": "expo run:android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "doctor": "node scripts/doctor.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier \"App.tsx\" \"index.js\" \"{app,eas,package,tsconfig}.json\" \"{README,RELEASES,CHANGELOG}.md\" \"eslint.config.mjs\" \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.js\" \".github/workflows/**/*.yml\" --write",
-    "format:check": "prettier \"App.tsx\" \"index.js\" \"{app,eas,package,tsconfig}.json\" \"{README,RELEASES,CHANGELOG}.md\" \"eslint.config.mjs\" \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.js\" \".github/workflows/**/*.yml\" --check",
+    "format": "prettier \"App.tsx\" \"index.js\" \"{app,eas,package,tsconfig}.json\" \"{README,RELEASES,CHANGELOG}.md\" \"eslint.config.mjs\" \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.js\" \".github/workflows/**/*.yml\" \".vscode/**/*.json\" --write",
+    "format:check": "prettier \"App.tsx\" \"index.js\" \"{app,eas,package,tsconfig}.json\" \"{README,RELEASES,CHANGELOG}.md\" \"eslint.config.mjs\" \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.js\" \".github/workflows/**/*.yml\" \".vscode/**/*.json\" --check",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test",
-    "test": "node --experimental-strip-types --test --test-isolation=none \"tests/**/*.test.ts\"",
+    "verify": "npm run check",
+    "test:unit": "node --experimental-strip-types --test --test-isolation=none \"tests/**/*.test.ts\"",
+    "test": "npm run test:unit",
     "test:watch": "node --experimental-strip-types --test --test-isolation=none --watch \"tests/**/*.test.ts\"",
     "release:patch": "node scripts/release.js patch",
     "release:minor": "node scripts/release.js minor",
@@ -35,6 +43,9 @@
     "react-native-web": "^0.21.0"
   },
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/react": "~19.1.10",

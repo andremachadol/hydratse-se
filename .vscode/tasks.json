@@ -1,0 +1,41 @@
+﻿{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Doctor",
+      "type": "shell",
+      "command": "npm run doctor",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: install debug build",
+      "type": "shell",
+      "command": "npm run android:run",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: start dev client",
+      "type": "shell",
+      "command": "npm run dev:android",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: watch",
+      "type": "shell",
+      "command": "npm run test:watch",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Verify",
+      "type": "shell",
+      "command": "npm run verify",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
